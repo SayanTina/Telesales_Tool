@@ -6,441 +6,118 @@
 <title>Telesales Distribution Tool</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --bg: #F7F6F2;
-    --surface: #FFFFFF;
-    --surface2: #F0EFE9;
-    --border: #E2E0D8;
-    --border-strong: #C8C5BA;
-    --text: #1A1917;
-    --text-muted: #6B6860;
-    --text-faint: #A09D96;
-    --accent: #1D9E75;
-    --accent-light: #E1F5EE;
-    --accent-dark: #0F6E56;
-    --blue: #185FA5;
-    --blue-light: #E6F1FB;
-    --amber: #854F0B;
-    --amber-light: #FAEEDA;
-    --red: #A32D2D;
-    --red-light: #FCEBEB;
-    --purple: #534AB7;
-    --purple-light: #EEEDFE;
+    --bg: #F7F6F2; --surface: #FFFFFF; --surface2: #F0EFE9;
+    --border: #E2E0D8; --border-strong: #C8C5BA;
+    --text: #1A1917; --text-muted: #6B6860; --text-faint: #A09D96;
+    --accent: #1D9E75; --accent-light: #E1F5EE; --accent-dark: #0F6E56;
+    --blue: #185FA5; --blue-light: #E6F1FB;
+    --amber: #854F0B; --amber-light: #FAEEDA;
+    --red: #A32D2D; --red-light: #FCEBEB;
+    --purple: #534AB7; --purple-light: #EEEDFE;
     --font: 'Inter', system-ui, -apple-system, sans-serif;
     --mono: 'JetBrains Mono', 'Fira Code', monospace;
-    --r: 8px;
-    --r-lg: 12px;
+    --r: 8px; --r-lg: 12px;
   }
-
-  body {
-    font-family: var(--font);
-    background: var(--bg);
-    color: var(--text);
-    font-size: 14px;
-    line-height: 1.6;
-    min-height: 100vh;
-  }
-
-  /* Layout */
+  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; min-height: 100vh; }
   .app { display: flex; flex-direction: column; min-height: 100vh; }
-
-  .topbar {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    gap: 0;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-
-  .topbar-brand {
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--text);
-    padding: 16px 0;
-    margin-right: 32px;
-  }
-
-  .nav-tabs { display: flex; gap: 0; }
-
-  .nav-tab {
-    padding: 18px 20px 16px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-muted);
-    cursor: pointer;
-    border: none;
-    background: none;
-    border-bottom: 2px solid transparent;
-    transition: color 0.15s, border-color 0.15s;
-    white-space: nowrap;
-  }
-
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; position: sticky; top: 0; z-index: 100; }
+  .topbar-brand { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text); padding: 16px 0; margin-right: 32px; }
+  .nav-tabs { display: flex; gap: 0; flex: 1; }
+  .nav-tab { padding: 18px 20px 16px; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; white-space: nowrap; }
   .nav-tab:hover { color: var(--text); }
   .nav-tab.active { color: var(--accent-dark); border-bottom-color: var(--accent); }
-
+  .save-indicator { font-size: 11px; color: var(--text-faint); padding: 0 12px; white-space: nowrap; transition: color 0.3s; }
+  .save-indicator.saved { color: var(--accent); }
   .page { display: none; padding: 28px 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
   .page.active { display: block; }
-
-  /* Cards */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r-lg);
-    padding: 20px;
-    margin-bottom: 16px;
-  }
-
-  .card-title {
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
-    margin-bottom: 16px;
-  }
-
-  /* Grid layouts */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 16px; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-
-  /* Form elements */
-  label {
-    display: block;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-muted);
-    margin-bottom: 5px;
-  }
-
-  input[type="number"], input[type="text"], select {
-    width: 100%;
-    padding: 8px 10px;
-    border: 1px solid var(--border);
-    border-radius: var(--r);
-    font-size: 13px;
-    font-family: var(--font);
-    background: var(--surface);
-    color: var(--text);
-    transition: border-color 0.15s;
-    -moz-appearance: textfield;
-  }
-
-  input[type="number"]::-webkit-outer-spin-button,
-  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
-
-  input:focus, select:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(29,158,117,0.1);
-  }
-
-  /* Range slider */
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  label { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 5px; }
+  input[type="number"], input[type="text"], select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r); font-size: 13px; font-family: var(--font); background: var(--surface); color: var(--text); transition: border-color 0.15s; -moz-appearance: textfield; }
+  input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(29,158,117,0.1); }
   .range-row { display: flex; align-items: center; gap: 10px; }
-  .range-row input[type="range"] {
-    flex: 1;
-    height: 4px;
-    border-radius: 2px;
-    accent-color: var(--accent);
-    border: none;
-    padding: 0;
-    box-shadow: none;
-  }
-
-  .range-val {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-    min-width: 40px;
-    text-align: right;
-    font-family: var(--mono);
-  }
-
-  /* Buttons */
-  .btn {
-    padding: 8px 16px;
-    border-radius: var(--r);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: all 0.15s;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-  }
+  .range-row input[type="range"] { flex: 1; height: 4px; border-radius: 2px; accent-color: var(--accent); border: none; padding: 0; box-shadow: none; }
+  .range-val { font-size: 13px; font-weight: 600; color: var(--text); min-width: 48px; text-align: right; font-family: var(--mono); }
+  .btn { padding: 8px 16px; border-radius: var(--r); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   .btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
-
-  .btn-ghost {
-    background: transparent;
-    color: var(--text-muted);
-    border-color: var(--border);
-  }
+  .btn-ghost { background: transparent; color: var(--text-muted); border-color: var(--border); }
   .btn-ghost:hover { background: var(--surface2); color: var(--text); }
-
-  .btn-danger {
-    background: transparent;
-    color: var(--red);
-    border-color: var(--border);
-    padding: 4px 10px;
-    font-size: 12px;
-  }
+  .btn-danger { background: transparent; color: var(--red); border-color: var(--border); padding: 4px 10px; font-size: 12px; }
   .btn-danger:hover { background: var(--red-light); border-color: var(--red); }
-
-  /* Badges */
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 9px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-  }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+  .badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
   .badge-a { background: var(--accent-light); color: var(--accent-dark); }
   .badge-b { background: var(--blue-light); color: var(--blue); }
   .badge-c { background: var(--amber-light); color: var(--amber); }
   .badge-new { background: var(--purple-light); color: var(--purple); }
   .badge-t2 { background: var(--blue-light); color: var(--blue); }
   .badge-t3 { background: var(--accent-light); color: var(--accent-dark); }
-
-  /* Metric summary */
   .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 10px; margin-bottom: 16px; }
-
-  .stat-card {
-    background: var(--surface2);
-    border-radius: var(--r);
-    padding: 12px 14px;
-  }
+  .stat-card { background: var(--surface2); border-radius: var(--r); padding: 12px 14px; }
   .stat-label { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
   .stat-value { font-size: 22px; font-weight: 600; color: var(--text); line-height: 1.2; font-family: var(--mono); }
   .stat-sub { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
-
-  /* Employee table */
   .emp-table { width: 100%; border-collapse: collapse; }
-  .emp-table th {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--text-muted);
-    text-align: left;
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--border);
-  }
-  .emp-table td {
-    padding: 10px;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-    vertical-align: middle;
-  }
+  .emp-table th { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .emp-table td { padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
   .emp-table tr:last-child td { border-bottom: none; }
   .emp-table tr:hover td { background: var(--surface2); }
-
-  /* Mix bar */
   .mix-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; gap: 1px; min-width: 100px; }
   .mix-seg { height: 100%; }
   .mix-new { background: #AFA9EC; }
   .mix-t2 { background: #85B7EB; }
   .mix-t3 { background: #5DCAA5; }
-
-  /* Progress bar */
   .progress-wrap { background: var(--surface2); border-radius: 4px; height: 6px; overflow: hidden; }
   .progress-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
-
-  /* Alert boxes */
-  .alert {
-    padding: 10px 14px;
-    border-radius: var(--r);
-    font-size: 13px;
-    margin-bottom: 12px;
-    border-left: 3px solid;
-  }
+  .alert { padding: 10px 14px; border-radius: var(--r); font-size: 13px; margin-bottom: 12px; border-left: 3px solid; }
   .alert-warn { background: var(--amber-light); color: var(--amber); border-color: #EF9F27; }
   .alert-ok { background: var(--accent-light); color: var(--accent-dark); border-color: var(--accent); }
   .alert-info { background: var(--blue-light); color: var(--blue); border-color: #378ADD; }
-
-  /* Section header */
-  .section-hd {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 14px;
-  }
-  .section-hd h2 { font-size: 15px; font-weight: 600; }
-
-  /* Phone pool page */
-  .phone-controls {
-    display: flex;
-    gap: 10px;
-    align-items: flex-end;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
-  }
-
+  .section-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .phone-controls { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px; }
   .phone-controls > div { flex: 1; min-width: 140px; }
-
   .phone-table { width: 100%; border-collapse: collapse; }
-  .phone-table th {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--text-muted);
-    text-align: left;
-    padding: 8px 10px;
-    background: var(--surface2);
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 60px;
-    z-index: 5;
-  }
-  .phone-table td {
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-    vertical-align: middle;
-  }
+  .phone-table th { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); text-align: left; padding: 8px 10px; background: var(--surface2); border-bottom: 1px solid var(--border); position: sticky; top: 57px; z-index: 5; }
+  .phone-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
   .phone-table tr:last-child td { border-bottom: none; }
   .phone-table tr:hover td { background: #FAFAF8; }
-
-  .phone-table input[type="text"] {
-    border: none;
-    background: transparent;
-    padding: 2px 4px;
-    font-family: var(--mono);
-    font-size: 13px;
-  }
-  .phone-table input[type="text"]:focus {
-    background: var(--surface);
-    border: 1px solid var(--accent);
-    box-shadow: none;
-    border-radius: 4px;
-  }
-
-  .type-select {
-    padding: 3px 8px;
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    background: var(--surface);
-    color: var(--text);
-    font-family: var(--font);
-  }
-
-  .pool-summary {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
-  }
-
-  .pool-chip {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 5px 12px;
-    font-size: 12px;
-    font-weight: 500;
-  }
-
+  .phone-table input[type="text"] { border: none; background: transparent; padding: 2px 4px; font-family: var(--mono); font-size: 13px; }
+  .phone-table input[type="text"]:focus { background: var(--surface); border: 1px solid var(--accent); box-shadow: none; border-radius: 4px; }
+  .type-select { padding: 3px 8px; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; background: var(--surface); color: var(--text); font-family: var(--font); }
+  .pool-summary { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .pool-chip { display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 500; }
   .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
   .dot-new { background: #7F77DD; }
   .dot-t2 { background: #378ADD; }
   .dot-t3 { background: #1D9E75; }
-
-  /* Employee settings */
   .emp-settings { display: flex; flex-direction: column; gap: 12px; }
-
-  .emp-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r-lg);
-    overflow: hidden;
-  }
-
-  .emp-card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    background: var(--surface2);
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-  }
-
+  .emp-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
+  .emp-card-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); cursor: pointer; }
   .emp-card-header-left { display: flex; align-items: center; gap: 10px; }
   .emp-card-body { padding: 16px; display: none; }
   .emp-card-body.open { display: block; }
-
-  .emp-avatar {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 600;
-  }
-
+  .emp-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
   .chevron { font-size: 12px; color: var(--text-muted); transition: transform 0.2s; }
   .chevron.open { transform: rotate(180deg); }
-
-  /* Score section */
-  .score-display {
-    text-align: center;
-    padding: 16px;
-    background: var(--surface2);
-    border-radius: var(--r);
-    margin-bottom: 12px;
-  }
-  .score-num { font-size: 32px; font-weight: 700; font-family: var(--mono); }
-  .score-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-
-  /* Results table row coloring */
   .result-a td:first-child { border-left: 3px solid var(--accent); }
   .result-b td:first-child { border-left: 3px solid var(--blue); }
   .result-c td:first-child { border-left: 3px solid #EF9F27; }
-
-  /* Divider */
-  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
-
-  /* Tabs inside page */
   .inner-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
-  .inner-tab {
-    padding: 8px 16px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-muted);
-    cursor: pointer;
-    border: none;
-    background: none;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-  }
+  .inner-tab { padding: 8px 16px; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; margin-bottom: -1px; }
   .inner-tab:hover { color: var(--text); }
   .inner-tab.active { color: var(--accent-dark); border-bottom-color: var(--accent); }
-
   .inner-pane { display: none; }
   .inner-pane.active { display: block; }
-
-  /* Scrollable table wrapper */
   .table-wrap { overflow-x: auto; border-radius: var(--r-lg); border: 1px solid var(--border); }
-
-  /* Responsive */
+  .score-formula { background: var(--surface2); border-radius: var(--r); padding: 10px 14px; font-size: 12px; color: var(--text-muted); margin-top: 10px; }
   @media (max-width: 700px) {
-    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .grid-2, .grid-3, .grid-5 { grid-template-columns: 1fr; }
     .page { padding: 16px; }
     .topbar { padding: 0 16px; }
   }
@@ -449,97 +126,95 @@
 <body>
 <div class="app">
 
-  <!-- Topbar -->
   <nav class="topbar">
     <span class="topbar-brand">Telesales</span>
     <div class="nav-tabs">
-      <button class="nav-tab active" onclick="switchPage('config')">⚙ ตั้งค่าระบบ</button>
-      <button class="nav-tab" onclick="switchPage('results')">📊 จำลองผลลัพธ์</button>
-      <button class="nav-tab" onclick="switchPage('pool')">📋 จัดการเบอร์</button>
+      <button class="nav-tab active" onclick="switchPage('config',this)">⚙ ตั้งค่าระบบ</button>
+      <button class="nav-tab" onclick="switchPage('results',this)">📊 จำลองผลลัพธ์</button>
+      <button class="nav-tab" onclick="switchPage('pool',this)">📋 จัดการเบอร์</button>
     </div>
+    <span class="save-indicator" id="save-indicator">—</span>
   </nav>
 
   <!-- PAGE 1: Config -->
   <div id="page-config" class="page active">
 
-    <!-- Global settings -->
     <div class="card">
       <div class="card-title">ตั้งค่าทั่วไป</div>
       <div class="grid-3">
         <div>
-          <label>จำนวนเบอร์ทั้งหมดวันนี้</label>
-          <input type="number" id="totalPool" value="1000" min="1" onchange="recalc()">
-        </div>
-        <div>
-          <label>เบอร์ช่วงเวลา (เท่ากันทุกคน)</label>
-          <input type="number" id="timeSlot" value="15" min="0" onchange="recalc()">
+          <label>เบอร์ช่วงเวลา (หักเท่ากันทุกคน)</label>
+          <input type="number" id="timeSlot" value="15" min="0" onchange="saveSettings()">
         </div>
         <div>
           <label>Composite Score: น้ำหนัก T3 close%</label>
           <div class="range-row">
             <input type="range" id="weightT3" min="0" max="100" value="60" step="5"
-              oninput="document.getElementById('wt3val').textContent=this.value+'%'; document.getElementById('wt2val').textContent=(100-this.value)+'%'; recalc()">
+              oninput="document.getElementById('wt3val').textContent=this.value+'%';
+                       document.getElementById('wt2val').textContent=(100-+this.value)+'%';
+                       saveSettings(); renderEmpSettings();">
             <span class="range-val" id="wt3val">60%</span>
           </div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
             น้ำหนัก T2→T3 conversion: <span id="wt2val" style="font-weight:600">40%</span>
           </div>
         </div>
+        <div style="display:flex;flex-direction:column;justify-content:flex-end;">
+          <button class="btn btn-ghost btn-sm" onclick="resetAll()" style="border-color:var(--red);color:var(--red)">🗑 ล้างข้อมูลทั้งหมด</button>
+        </div>
       </div>
     </div>
 
-    <!-- Group thresholds & weights -->
     <div class="card">
       <div class="card-title">เกณฑ์กลุ่มและน้ำหนักเบอร์</div>
       <div class="grid-3">
         <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;border-top:3px solid var(--accent)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <span class="badge badge-a">กลุ่ม A</span>
-            <span style="font-size:11px;color:var(--text-muted)">คนเก่ง</span>
+            <span style="font-size:11px;color:var(--text-muted)">score สูง</span>
           </div>
           <label>Score ขั้นต่ำ (%)</label>
-          <input type="number" id="threshA" value="20" min="0" max="100" onchange="recalc()">
+          <input type="number" id="threshA" value="20" min="0" max="100" onchange="saveSettings(); renderEmpSettings()">
           <div style="margin-top:10px">
-          <label>Weight (จำนวนเบอร์ที่ได้)</label>
-          <input type="number" id="weightA" value="130" min="1" onchange="recalc()">
+            <label>Weight เบอร์ที่ได้</label>
+            <input type="number" id="weightA" value="130" min="1" onchange="saveSettings()">
           </div>
         </div>
         <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;border-top:3px solid var(--blue)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <span class="badge badge-b">กลุ่ม B</span>
-            <span style="font-size:11px;color:var(--text-muted)">กลางๆ</span>
+            <span style="font-size:11px;color:var(--text-muted)">score กลาง</span>
           </div>
           <label>Score ขั้นต่ำ (%)</label>
-          <input type="number" id="threshB" value="15" min="0" max="100" onchange="recalc()">
+          <input type="number" id="threshB" value="15" min="0" max="100" onchange="saveSettings(); renderEmpSettings()">
           <div style="margin-top:10px">
-          <label>Weight (จำนวนเบอร์ที่ได้)</label>
-          <input type="number" id="weightB" value="110" min="1" onchange="recalc()">
+            <label>Weight เบอร์ที่ได้</label>
+            <input type="number" id="weightB" value="110" min="1" onchange="saveSettings()">
           </div>
         </div>
         <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;border-top:3px solid #EF9F27">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <span class="badge badge-c">กลุ่ม C</span>
-            <span style="font-size:11px;color:var(--text-muted)">ต้องพัฒนา</span>
+            <span style="font-size:11px;color:var(--text-muted)">score ต่ำ</span>
           </div>
           <label>Score (0 ถึงต่ำกว่า B)</label>
-          <input type="number" value="" disabled style="background:var(--surface2);color:var(--text-faint)" id="threshC_display">
+          <input type="number" id="threshC_display" disabled style="background:var(--surface2);color:var(--text-faint)">
           <div style="margin-top:10px">
-          <label>Weight (จำนวนเบอร์ที่ได้)</label>
-          <input type="number" id="weightC" value="100" min="1" onchange="recalc()">
+            <label>Weight เบอร์ที่ได้</label>
+            <input type="number" id="weightC" value="100" min="1" onchange="saveSettings()">
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Mix ratios per group -->
-    <div class="card">
-      <div class="card-title">สัดส่วน Mix เบอร์กลาง (New / T2 / T3)</div>
-      <div id="mix-settings">
-        <!-- rendered by JS -->
+      <div class="alert alert-info" style="margin-top:14px;margin-bottom:0">
+        <strong>Weight คืออะไร?</strong> ตัวเลขสัมพัทธ์ที่กำหนดสัดส่วนเบอร์กลาง — กลุ่ม A ได้ตามอัตราส่วน weight A / (weight A + B + C) × เบอร์กลางรวม ไม่ใช่จำนวนตรงๆ
       </div>
     </div>
 
-    <!-- T3 Floor & Cap -->
+    <div class="card">
+      <div class="card-title">สัดส่วน Mix เบอร์กลาง (New / T2 / T3)</div>
+      <div id="mix-settings"></div>
+    </div>
+
     <div class="card">
       <div class="card-title">T3 Floor & Cap</div>
       <div class="grid-2">
@@ -547,7 +222,7 @@
           <label>T3 Floor — ขั้นต่ำ (% ของเบอร์กลาง)</label>
           <div class="range-row">
             <input type="range" id="t3floor" min="0" max="50" value="20" step="5"
-              oninput="document.getElementById('t3floorval').textContent=this.value+'%'; recalc()">
+              oninput="document.getElementById('t3floorval').textContent=this.value+'%'; saveSettings()">
             <span class="range-val" id="t3floorval">20%</span>
           </div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:4px">ทุกคนจะได้ T3 ไม่น้อยกว่านี้</div>
@@ -556,7 +231,7 @@
           <label>T3 Cap — สูงสุด (% ของเบอร์กลาง, 0 = ไม่ cap)</label>
           <div class="range-row">
             <input type="range" id="t3cap" min="0" max="100" value="0" step="5"
-              oninput="document.getElementById('t3capval').textContent=this.value==0?'ไม่ cap':this.value+'%'; recalc()">
+              oninput="document.getElementById('t3capval').textContent=+this.value===0?'ไม่ cap':this.value+'%'; saveSettings()">
             <span class="range-val" id="t3capval" style="min-width:55px">ไม่ cap</span>
           </div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:4px">ป้องกัน T3 กระจุกตัวกับกลุ่ม A</div>
@@ -564,7 +239,6 @@
       </div>
     </div>
 
-    <!-- Employees -->
     <div class="card">
       <div class="section-hd">
         <div class="card-title" style="margin:0">รายชื่อพนักงาน</div>
@@ -572,50 +246,32 @@
       </div>
       <div id="emp-settings" class="emp-settings"></div>
     </div>
-
   </div>
 
   <!-- PAGE 2: Results -->
   <div id="page-results" class="page">
     <div id="results-alert"></div>
-
     <div class="stat-grid" id="summary-stats"></div>
-
     <div class="inner-tabs">
-      <button class="inner-tab active" onclick="switchInner('dist')">การกระจาย T3</button>
-      <button class="inner-tab" onclick="switchInner('detail')">รายละเอียดรายคน</button>
-      <button class="inner-tab" onclick="switchInner('score')">Composite Score</button>
+      <button class="inner-tab active" onclick="switchInner('dist',this)">การกระจาย T3</button>
+      <button class="inner-tab" onclick="switchInner('detail',this)">รายละเอียดรายคน</button>
+      <button class="inner-tab" onclick="switchInner('score',this)">Composite Score</button>
     </div>
-
     <div id="inner-dist" class="inner-pane active">
       <div class="table-wrap">
-        <table class="emp-table" id="result-table">
+        <table class="emp-table">
           <thead>
             <tr>
-              <th>พนักงาน</th>
-              <th>กลุ่ม</th>
-              <th>Capacity</th>
-              <th>Owner</th>
-              <th>ช่วงเวลา</th>
-              <th>เบอร์กลาง</th>
-              <th>New</th>
-              <th>T2</th>
-              <th>T3</th>
-              <th>Mix</th>
+              <th>พนักงาน</th><th>กลุ่ม</th><th>Capacity</th><th>Owner</th>
+              <th>ช่วงเวลา</th><th>เบอร์กลาง</th><th>New</th><th>T2</th><th>T3</th><th>Mix</th>
             </tr>
           </thead>
           <tbody id="result-tbody"></tbody>
         </table>
       </div>
     </div>
-
-    <div id="inner-detail" class="inner-pane">
-      <div id="detail-cards"></div>
-    </div>
-
-    <div id="inner-score" class="inner-pane">
-      <div id="score-cards"></div>
-    </div>
+    <div id="inner-detail" class="inner-pane"><div id="detail-cards"></div></div>
+    <div id="inner-score" class="inner-pane"><div id="score-cards"></div></div>
   </div>
 
   <!-- PAGE 3: Phone Pool -->
@@ -629,7 +285,6 @@
           <button class="btn btn-primary" onclick="addPhone()">+ เพิ่มเบอร์</button>
         </div>
       </div>
-
       <div class="phone-controls">
         <div>
           <label>ค้นหาเบอร์หรือชื่อ</label>
@@ -655,23 +310,16 @@
         </div>
         <div style="flex:0">
           <label>&nbsp;</label>
-          <button class="btn btn-ghost" onclick="clearAll()" style="width:100%">ล้างทั้งหมด</button>
+          <button class="btn btn-ghost" onclick="clearPhonePool()" style="width:100%">ล้าง pool</button>
         </div>
       </div>
-
       <div class="pool-summary" id="pool-summary"></div>
-
       <div class="table-wrap" style="max-height:480px;overflow-y:auto">
         <table class="phone-table">
           <thead>
             <tr>
-              <th style="width:40px">#</th>
-              <th>เบอร์โทรศัพท์</th>
-              <th>ชื่อลูกค้า</th>
-              <th>ประเภท</th>
-              <th>Status</th>
-              <th>พนักงานที่รับผิดชอบ</th>
-              <th>หมายเหตุ</th>
+              <th style="width:40px">#</th><th>เบอร์โทรศัพท์</th><th>ชื่อลูกค้า</th>
+              <th>ประเภท</th><th>Status</th><th>พนักงานที่รับผิดชอบ</th><th>หมายเหตุ</th>
               <th style="width:60px">ลบ</th>
             </tr>
           </thead>
@@ -682,147 +330,222 @@
         ยังไม่มีเบอร์ใน pool — กด "+ เพิ่มเบอร์" หรือ Import CSV
       </div>
     </div>
-
     <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="handleCSV(event)">
   </div>
 
 </div>
-
 <script>
-// ─────────────────────────────────────────────
-// STATE
-// ─────────────────────────────────────────────
-let employees = [
-  { id:1, name:'เทเลเซล 1', t3Close:22, t2Conv:35, owner:40 },
-  { id:2, name:'เทเลเซล 2', t3Close:21, t2Conv:30, owner:35 },
-  { id:3, name:'เทเลเซล 3', t3Close:20, t2Conv:32, owner:38 },
-  { id:4, name:'เทเลเซล 4', t3Close:17, t2Conv:28, owner:30 },
-  { id:5, name:'เทเลเซล 5', t3Close:16, t2Conv:25, owner:28 },
-  { id:6, name:'เทเลเซล 6', t3Close:12, t2Conv:22, owner:24 },
-  { id:7, name:'เทเลเซล 7', t3Close:10, t2Conv:20, owner:26 },
-  { id:8, name:'เทเลเซล 8', t3Close:9,  t2Conv:18, owner:22 },
-  { id:9, name:'เทเลเซล 9', t3Close:11, t2Conv:38, owner:25 },
-  { id:10, name:'เทเลเซล 10', t3Close:8, t2Conv:15, owner:20 },
-];
-
-let phonePool = [];
-let nextPhoneId = 1;
-let nextEmpId = 11;
-
-const MIX = {
-  A: { new:35, t2:25, t3:40 },
-  B: { new:35, t2:30, t3:35 },
-  C: { new:30, t2:35, t3:35 },
+// ─── STORAGE KEYS ───────────────────────────
+const SK = {
+  employees: 'ts_employees',
+  settings:  'ts_settings',
+  mix:       'ts_mix',
+  phones:    'ts_phones',
+  nextEmpId: 'ts_nextEmpId',
+  nextPhId:  'ts_nextPhId',
 };
 
-// ─────────────────────────────────────────────
-// NAVIGATION
-// ─────────────────────────────────────────────
-function switchPage(p) {
+// ─── DEFAULTS ───────────────────────────────
+const DEFAULT_EMPLOYEES = [
+  { id:1,  name:'เทเลเซล 1',  capacity:90, t3Close:22, t2Conv:35, owner:40 },
+  { id:2,  name:'เทเลเซล 2',  capacity:88, t3Close:21, t2Conv:30, owner:35 },
+  { id:3,  name:'เทเลเซล 3',  capacity:85, t3Close:20, t2Conv:32, owner:38 },
+  { id:4,  name:'เทเลเซล 4',  capacity:80, t3Close:17, t2Conv:28, owner:30 },
+  { id:5,  name:'เทเลเซล 5',  capacity:78, t3Close:16, t2Conv:25, owner:28 },
+  { id:6,  name:'เทเลเซล 6',  capacity:75, t3Close:12, t2Conv:22, owner:24 },
+  { id:7,  name:'เทเลเซล 7',  capacity:74, t3Close:10, t2Conv:20, owner:26 },
+  { id:8,  name:'เทเลเซล 8',  capacity:72, t3Close:9,  t2Conv:18, owner:22 },
+  { id:9,  name:'เทเลเซล 9',  capacity:76, t3Close:11, t2Conv:38, owner:25 },
+  { id:10, name:'เทเลเซล 10', capacity:70, t3Close:8,  t2Conv:15, owner:20 },
+];
+
+const DEFAULT_SETTINGS = {
+  timeSlot:15, weightT3:60, threshA:20, threshB:15,
+  weightA:130, weightB:110, weightC:100, t3floor:20, t3cap:0,
+};
+
+const DEFAULT_MIX = {
+  A:{ new:35, t2:25, t3:40 },
+  B:{ new:35, t2:30, t3:35 },
+  C:{ new:30, t2:35, t3:35 },
+};
+
+// ─── STATE ──────────────────────────────────
+let employees = [];
+let phonePool  = [];
+let nextEmpId  = 11;
+let nextPhId   = 1;
+let MIX        = JSON.parse(JSON.stringify(DEFAULT_MIX));
+let saveTimer  = null;
+
+// ─── LOCALSTORAGE ────────────────────────────
+function loadAll() {
+  try {
+    employees = JSON.parse(localStorage.getItem(SK.employees)) || JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES));
+    phonePool  = JSON.parse(localStorage.getItem(SK.phones))    || [];
+    nextEmpId  = parseInt(localStorage.getItem(SK.nextEmpId))   || 11;
+    nextPhId   = parseInt(localStorage.getItem(SK.nextPhId))    || 1;
+    MIX        = JSON.parse(localStorage.getItem(SK.mix))       || JSON.parse(JSON.stringify(DEFAULT_MIX));
+    const s    = JSON.parse(localStorage.getItem(SK.settings))  || DEFAULT_SETTINGS;
+    applySettings(s);
+  } catch(e) { console.warn('localStorage load error', e); }
+}
+
+function applySettings(s) {
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  set('timeSlot', s.timeSlot);
+  set('weightT3', s.weightT3);
+  set('threshA',  s.threshA);
+  set('threshB',  s.threshB);
+  set('weightA',  s.weightA);
+  set('weightB',  s.weightB);
+  set('weightC',  s.weightC);
+  set('t3floor',  s.t3floor);
+  set('t3cap',    s.t3cap);
+  document.getElementById('wt3val').textContent  = s.weightT3 + '%';
+  document.getElementById('wt2val').textContent  = (100 - s.weightT3) + '%';
+  document.getElementById('t3floorval').textContent = s.t3floor + '%';
+  document.getElementById('t3capval').textContent   = s.t3cap === 0 ? 'ไม่ cap' : s.t3cap + '%';
+}
+
+function saveSettings() {
+  const s = {
+    timeSlot: getNum('timeSlot'), weightT3: getNum('weightT3'),
+    threshA:  getNum('threshA'),  threshB:  getNum('threshB'),
+    weightA:  getNum('weightA'),  weightB:  getNum('weightB'),
+    weightC:  getNum('weightC'),  t3floor:  getNum('t3floor'),
+    t3cap:    getNum('t3cap'),
+  };
+  localStorage.setItem(SK.settings, JSON.stringify(s));
+  flashSaved();
+}
+
+function saveEmployees() {
+  localStorage.setItem(SK.employees, JSON.stringify(employees));
+  localStorage.setItem(SK.nextEmpId, nextEmpId);
+  flashSaved();
+}
+
+function saveMix() {
+  localStorage.setItem(SK.mix, JSON.stringify(MIX));
+  flashSaved();
+}
+
+function savePhones() {
+  localStorage.setItem(SK.phones, JSON.stringify(phonePool));
+  localStorage.setItem(SK.nextPhId, nextPhId);
+  flashSaved();
+}
+
+function flashSaved() {
+  const el = document.getElementById('save-indicator');
+  el.textContent = '✓ บันทึกแล้ว';
+  el.classList.add('saved');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { el.textContent = '—'; el.classList.remove('saved'); }, 2000);
+}
+
+function resetAll() {
+  if (!confirm('ล้างข้อมูลทั้งหมดและกลับสู่ค่าเริ่มต้น?')) return;
+  Object.values(SK).forEach(k => localStorage.removeItem(k));
+  location.reload();
+}
+
+// ─── NAVIGATION ─────────────────────────────
+function switchPage(p, btn) {
   document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
-  event.currentTarget.classList.add('active');
-  if (p === 'results') { recalc(); renderResults(); }
-  if (p === 'pool') renderPhoneTable();
+  if (btn) btn.classList.add('active');
+  if (p === 'results') renderResults();
+  if (p === 'pool')    renderPhoneTable();
 }
 
-function switchInner(p) {
+function switchInner(p, btn) {
   document.querySelectorAll('.inner-pane').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.inner-tab').forEach(el => el.classList.remove('active'));
   document.getElementById('inner-'+p).classList.add('active');
-  event.currentTarget.classList.add('active');
+  if (btn) btn.classList.add('active');
 }
 
-// ─────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────
-function getNum(id) { return parseFloat(document.getElementById(id).value) || 0; }
+// ─── HELPERS ────────────────────────────────
+function getNum(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
 
 function getGroup(score) {
-  const a = getNum('threshA'), b = getNum('threshB');
-  if (score >= a) return 'A';
-  if (score >= b) return 'B';
+  if (score >= getNum('threshA')) return 'A';
+  if (score >= getNum('threshB')) return 'B';
   return 'C';
 }
 
 function compositeScore(emp) {
   const wt3 = getNum('weightT3') / 100;
-  const wt2 = 1 - wt3;
-  return (emp.t3Close * wt3) + (emp.t2Conv * wt2);
+  return (emp.t3Close * wt3) + (emp.t2Conv * (1 - wt3));
 }
 
-function calcCapacity(emp) {
-  const wA = getNum('weightA'), wB = getNum('weightB'), wC = getNum('weightC');
-  const pool = getNum('totalPool');
-  const g = getGroup(compositeScore(emp));
-  const w = g==='A'?wA:g==='B'?wB:wC;
-  // capacity proportional to weight relative to avg weight, scaled by pool/employees
-  const avgW = employees.reduce((s,e)=>{
-    const sc=compositeScore(e); const gr=getGroup(sc);
-    return s+(gr==='A'?wA:gr==='B'?wB:wC);
-  },0) / employees.length;
-  return Math.round((w / avgW) * (pool / employees.length));
-}
-
+// ─── DISTRIBUTION CALC ──────────────────────
+// Capacity is now per-employee (emp.capacity).
+// middle = capacity - owner - timeSlot
+// weight is only used to proportionally distribute "middle pool" across the team.
+// Each employee's middle = their capacity-derived middle, then mix is applied.
 function calcDistrib(emp) {
-  const ts = getNum('timeSlot');
+  const ts    = getNum('timeSlot');
   const floor = getNum('t3floor') / 100;
   const capPct = getNum('t3cap');
-  const cap = capPct > 0 ? capPct / 100 : 1;
+  const capRatio = capPct > 0 ? capPct / 100 : 1;
   const score = compositeScore(emp);
-  const g = getGroup(score);
-  const cap_val = calcCapacity(emp);
-  const middle = Math.max(0, cap_val - emp.owner - ts);
+  const g     = getGroup(score);
+
+  // middle = what's left after owner and time-slot bookings
+  const middle = Math.max(0, emp.capacity - emp.owner - ts);
+
   const mix = MIX[g];
-  let t3 = Math.round(middle * mix.t3 / 100);
-  let t2 = Math.round(middle * mix.t2 / 100);
+  let t3   = Math.round(middle * mix.t3  / 100);
+  let t2   = Math.round(middle * mix.t2  / 100);
   let newN = middle - t3 - t2;
-  // apply floor
+
+  // floor
   const floorAbs = Math.round(middle * floor);
-  if (t3 < floorAbs) { const diff = floorAbs - t3; t3 = floorAbs; t2 = Math.max(0, t2 - Math.ceil(diff/2)); newN = Math.max(0, middle - t3 - t2); }
-  // apply cap
-  const capAbs = Math.round(middle * cap);
-  if (t3 > capAbs) { const diff = t3 - capAbs; t3 = capAbs; t2 = Math.min(middle - t3, t2 + Math.ceil(diff/2)); newN = middle - t3 - t2; }
-  return { capacity: cap_val, owner: emp.owner, timeSlot: ts, middle, newN: Math.max(0,newN), t2: Math.max(0,t2), t3: Math.max(0,t3), group: g, score };
+  if (t3 < floorAbs) {
+    const diff = floorAbs - t3;
+    t3 = floorAbs;
+    t2 = Math.max(0, t2 - Math.ceil(diff / 2));
+    newN = Math.max(0, middle - t3 - t2);
+  }
+
+  // cap
+  const capAbs = Math.round(middle * capRatio);
+  if (t3 > capAbs) {
+    const diff = t3 - capAbs;
+    t3 = capAbs;
+    t2 = Math.min(middle - t3, t2 + Math.ceil(diff / 2));
+    newN = middle - t3 - t2;
+  }
+
+  return {
+    capacity: emp.capacity, owner: emp.owner, timeSlot: ts, middle,
+    newN: Math.max(0, newN), t2: Math.max(0, t2), t3: Math.max(0, t3),
+    group: g, score
+  };
 }
 
-// ─────────────────────────────────────────────
-// CONFIG PAGE RENDER
-// ─────────────────────────────────────────────
+// ─── CONFIG: MIX SETTINGS ───────────────────
 function renderMixSettings() {
-  const groups = ['A','B','C'];
-  const labels = { A:'กลุ่ม A', B:'กลุ่ม B', C:'กลุ่ม C' };
   const colors = { A:'var(--accent)', B:'var(--blue)', C:'#EF9F27' };
+  const labels = { A:'กลุ่ม A', B:'กลุ่ม B', C:'กลุ่ม C' };
   let html = '<div class="grid-3">';
-  groups.forEach(g => {
+  ['A','B','C'].forEach(g => {
     const m = MIX[g];
     html += `<div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;border-top:3px solid ${colors[g]}">
       <div style="font-weight:600;font-size:13px;margin-bottom:12px">${labels[g]}</div>
+      ${['new','t2','t3'].map(k => `
       <div style="margin-bottom:10px">
-        <label>New (%)</label>
+        <label>${k.toUpperCase()} (%)</label>
         <div class="range-row">
-          <input type="range" min="0" max="100" value="${m.new}" step="5"
-            oninput="updateMix('${g}','new',+this.value); this.nextElementSibling.textContent=this.value+'%'; recalc()">
-          <span class="range-val">${m.new}%</span>
+          <input type="range" min="0" max="100" value="${m[k]}" step="5"
+            oninput="updateMix('${g}','${k}',+this.value);this.nextElementSibling.textContent=this.value+'%'">
+          <span class="range-val">${m[k]}%</span>
         </div>
-      </div>
-      <div style="margin-bottom:10px">
-        <label>T2 (%)</label>
-        <div class="range-row">
-          <input type="range" min="0" max="100" value="${m.t2}" step="5"
-            oninput="updateMix('${g}','t2',+this.value); this.nextElementSibling.textContent=this.value+'%'; recalc()">
-          <span class="range-val">${m.t2}%</span>
-        </div>
-      </div>
-      <div style="margin-bottom:10px">
-        <label>T3 (%)</label>
-        <div class="range-row">
-          <input type="range" min="0" max="100" value="${m.t3}" step="5"
-            oninput="updateMix('${g}','t3',+this.value); this.nextElementSibling.textContent=this.value+'%'; recalc()">
-          <span class="range-val">${m.t3}%</span>
-        </div>
-      </div>
+      </div>`).join('')}
       <div id="mix-warn-${g}" style="font-size:11px;display:none"></div>
     </div>`;
   });
@@ -835,26 +558,29 @@ function updateMix(g, k, v) {
   const total = MIX[g].new + MIX[g].t2 + MIX[g].t3;
   const el = document.getElementById('mix-warn-'+g);
   if (Math.abs(total - 100) > 1) {
-    el.style.display = 'block';
-    el.style.color = 'var(--red)';
+    el.style.display = 'block'; el.style.color = 'var(--red)';
     el.textContent = `⚠ รวมได้ ${total}% (ควรได้ 100%)`;
-  } else {
-    el.style.display = 'none';
-  }
+  } else { el.style.display = 'none'; }
+  saveMix();
 }
 
+// ─── CONFIG: EMPLOYEE SETTINGS ──────────────
 function renderEmpSettings() {
   const container = document.getElementById('emp-settings');
   container.innerHTML = '';
+  const colors = { A:'#E1F5EE', B:'#E6F1FB', C:'#FAEEDA' };
+  const tc     = { A:'#0F6E56', B:'#185FA5', C:'#854F0B' };
+
   employees.forEach(emp => {
     const score = compositeScore(emp);
-    const g = getGroup(score);
-    const colors = { A:'#E1F5EE', B:'#E6F1FB', C:'#FAEEDA' };
-    const tc = { A:'#0F6E56', B:'#185FA5', C:'#854F0B' };
-    const initials = emp.name.replace('เทเลเซล','TS').slice(0,2).toUpperCase();
+    const g     = getGroup(score);
+    const wt3   = getNum('weightT3');
+    const wt2   = 100 - wt3;
+    const middle = Math.max(0, emp.capacity - emp.owner - getNum('timeSlot'));
+    const initials = emp.name.slice(0, 2).toUpperCase();
+
     const div = document.createElement('div');
     div.className = 'emp-card';
-    div.id = 'emp-card-'+emp.id;
     div.innerHTML = `
       <div class="emp-card-header" onclick="toggleEmpCard(${emp.id})">
         <div class="emp-card-header-left">
@@ -865,20 +591,30 @@ function renderEmpSettings() {
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:12px">
-          <span style="font-size:12px;color:var(--text-muted)">Score: <strong style="font-family:var(--mono)">${score.toFixed(1)}%</strong></span>
+          <span style="font-size:12px;color:var(--text-muted)">
+            Score: <strong style="font-family:var(--mono)">${score.toFixed(1)}%</strong>
+            &nbsp;|&nbsp; เบอร์กลาง: <strong style="font-family:var(--mono)">${middle}</strong>
+          </span>
           <button class="btn btn-danger" onclick="event.stopPropagation();removeEmployee(${emp.id})">ลบ</button>
           <span class="chevron" id="chev-${emp.id}">▼</span>
         </div>
       </div>
       <div class="emp-card-body" id="empbody-${emp.id}">
-        <div class="grid-4" style="margin-bottom:12px">
+        <div class="grid-5" style="margin-bottom:12px">
           <div>
             <label>ชื่อพนักงาน</label>
-            <input type="text" value="${emp.name}" onchange="updateEmp(${emp.id},'name',this.value)">
+            <input type="text" value="${emp.name}"
+              onchange="updateEmp(${emp.id},'name',this.value)">
+          </div>
+          <div>
+            <label>Capacity (โทรได้สูงสุด/วัน)</label>
+            <input type="number" value="${emp.capacity}" min="0"
+              onchange="updateEmp(${emp.id},'capacity',+this.value)">
           </div>
           <div>
             <label>Owner (เบอร์ลูกค้าของตัวเอง)</label>
-            <input type="number" value="${emp.owner}" min="0" onchange="updateEmp(${emp.id},'owner',+this.value)">
+            <input type="number" value="${emp.owner}" min="0"
+              onchange="updateEmp(${emp.id},'owner',+this.value)">
           </div>
           <div>
             <label>T3 Close Rate (%)</label>
@@ -891,61 +627,61 @@ function renderEmpSettings() {
               onchange="updateEmp(${emp.id},'t2Conv',+this.value)">
           </div>
         </div>
-        <div style="background:var(--surface2);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--text-muted)">
-          Composite Score = (${emp.t3Close}% × ${document.getElementById('weightT3').value}%) + (${emp.t2Conv}% × ${100-getNum('weightT3')}%) = <strong style="color:var(--text);font-family:var(--mono)">${score.toFixed(1)}%</strong>
+        <div class="score-formula">
+          Composite Score = (${emp.t3Close}% × ${wt3}%) + (${emp.t2Conv}% × ${wt2}%) =
+          <strong style="color:var(--text);font-family:var(--mono)">${score.toFixed(1)}%</strong>
+          &nbsp;→ กลุ่ม ${g}
+          &nbsp;|&nbsp; เบอร์กลาง = ${emp.capacity} − ${emp.owner} (owner) − ${getNum('timeSlot')} (ช่วงเวลา) =
+          <strong style="font-family:var(--mono)">${middle}</strong>
         </div>
       </div>`;
     container.appendChild(div);
   });
+
   updateThreshCDisplay();
 }
 
 function toggleEmpCard(id) {
-  const body = document.getElementById('empbody-'+id);
-  const chev = document.getElementById('chev-'+id);
-  body.classList.toggle('open');
-  chev.classList.toggle('open');
+  document.getElementById('empbody-'+id)?.classList.toggle('open');
+  document.getElementById('chev-'+id)?.classList.toggle('open');
 }
 
 function updateEmp(id, key, val) {
-  const emp = employees.find(e=>e.id===id);
-  if (emp) { emp[key] = val; renderEmpSettings(); recalc(); }
+  const emp = employees.find(e => e.id === id);
+  if (emp) { emp[key] = val; saveEmployees(); renderEmpSettings(); }
 }
 
 function addEmployee() {
-  employees.push({ id: nextEmpId++, name: 'พนักงานใหม่ '+nextEmpId, t3Close: 15, t2Conv: 25, owner: 20 });
+  employees.push({ id: nextEmpId++, name: 'พนักงานใหม่', capacity: 80, t3Close: 15, t2Conv: 25, owner: 20 });
+  saveEmployees();
   renderEmpSettings();
 }
 
 function removeEmployee(id) {
-  employees = employees.filter(e=>e.id!==id);
+  if (!confirm('ลบพนักงานนี้?')) return;
+  employees = employees.filter(e => e.id !== id);
+  saveEmployees();
   renderEmpSettings();
-  recalc();
 }
 
 function updateThreshCDisplay() {
-  const b = getNum('threshB');
+  const b  = getNum('threshB');
   const el = document.getElementById('threshC_display');
-  if (el) el.value = '0 – '+(b-1)+'%';
+  if (el) el.value = '0 – ' + (b - 1) + '%';
 }
 
-function recalc() {
-  updateThreshCDisplay();
-  renderEmpSettings();
-}
-
-// ─────────────────────────────────────────────
-// RESULTS PAGE
-// ─────────────────────────────────────────────
+// ─── RESULTS PAGE ───────────────────────────
 function renderResults() {
   const results = employees.map(emp => ({ emp, ...calcDistrib(emp) }));
 
-  // Summary stats
-  const totalT3 = results.reduce((s,r)=>s+r.t3,0);
-  const totalNew = results.reduce((s,r)=>s+r.newN,0);
-  const totalT2 = results.reduce((s,r)=>s+r.t2,0);
-  const avgT3A = results.filter(r=>r.group==='A').reduce((s,r)=>s+r.t3,0) / (results.filter(r=>r.group==='A').length||1);
-  const avgT3C = results.filter(r=>r.group==='C').reduce((s,r)=>s+r.t3,0) / (results.filter(r=>r.group==='C').length||1);
+  const totalT3 = results.reduce((s,r) => s+r.t3, 0);
+  const totalT2 = results.reduce((s,r) => s+r.t2, 0);
+  const totalNew = results.reduce((s,r) => s+r.newN, 0);
+  const grpA = results.filter(r => r.group === 'A');
+  const grpC = results.filter(r => r.group === 'C');
+  const avgT3A = grpA.length ? grpA.reduce((s,r)=>s+r.t3,0)/grpA.length : 0;
+  const avgT3C = grpC.length ? grpC.reduce((s,r)=>s+r.t3,0)/grpC.length : 0;
+  const gap    = avgT3A - avgT3C;
 
   document.getElementById('summary-stats').innerHTML = `
     <div class="stat-card"><div class="stat-label">T3 รวมทั้งทีม</div><div class="stat-value">${totalT3}</div><div class="stat-sub">ใบ</div></div>
@@ -953,14 +689,16 @@ function renderResults() {
     <div class="stat-card"><div class="stat-label">T2 รวม</div><div class="stat-value">${totalT2}</div><div class="stat-sub">ใบ</div></div>
     <div class="stat-card"><div class="stat-label">T3 เฉลี่ย กลุ่ม A</div><div class="stat-value">${avgT3A.toFixed(1)}</div><div class="stat-sub">ใบ/คน</div></div>
     <div class="stat-card"><div class="stat-label">T3 เฉลี่ย กลุ่ม C</div><div class="stat-value">${avgT3C.toFixed(1)}</div><div class="stat-sub">ใบ/คน</div></div>
-    <div class="stat-card"><div class="stat-label">ช่องว่าง A-C</div><div class="stat-value" style="color:${(avgT3A-avgT3C)>8?'var(--red)':'var(--accent)'}">${(avgT3A-avgT3C).toFixed(1)}</div><div class="stat-sub">ใบ/คน</div></div>
-  `;
+    <div class="stat-card">
+      <div class="stat-label">ช่องว่าง A−C</div>
+      <div class="stat-value" style="color:${gap>8?'var(--red)':'var(--accent)'}">${gap.toFixed(1)}</div>
+      <div class="stat-sub">ใบ/คน</div>
+    </div>`;
 
-  // Alert
   const alertEl = document.getElementById('results-alert');
-  const gap = avgT3A - avgT3C;
-  if (gap > 8) alertEl.innerHTML = `<div class="alert alert-warn">⚠ ช่องว่าง T3 ระหว่างกลุ่ม A และ C = ${gap.toFixed(1)} ใบ/คน — สูงเกินไป พิจารณาเปิด T3 Floor หรือลด Cap</div>`;
-  else alertEl.innerHTML = `<div class="alert alert-ok">✓ การกระจาย T3 อยู่ในระดับที่สมดุล (ช่องว่าง A-C = ${gap.toFixed(1)} ใบ/คน)</div>`;
+  alertEl.innerHTML = gap > 8
+    ? `<div class="alert alert-warn">⚠ ช่องว่าง T3 กลุ่ม A−C = ${gap.toFixed(1)} ใบ/คน — สูงเกินไป พิจารณาเปิด T3 Floor หรือลด Mix T3 ของกลุ่ม A</div>`
+    : `<div class="alert alert-ok">✓ การกระจาย T3 อยู่ในระดับสมดุล (ช่องว่าง A−C = ${gap.toFixed(1)} ใบ/คน)</div>`;
 
   // Main table
   const tbody = document.getElementById('result-tbody');
@@ -968,7 +706,7 @@ function renderResults() {
   results.forEach(r => {
     const total = r.newN + r.t2 + r.t3;
     const tr = document.createElement('tr');
-    tr.className = 'result-'+r.group.toLowerCase();
+    tr.className = 'result-' + r.group.toLowerCase();
     tr.innerHTML = `
       <td style="font-weight:500">${r.emp.name}</td>
       <td><span class="badge badge-${r.group.toLowerCase()}">กลุ่ม ${r.group}</span></td>
@@ -981,123 +719,124 @@ function renderResults() {
       <td><span class="badge badge-t3">${r.t3}</span></td>
       <td>
         <div class="mix-bar">
-          <div class="mix-seg mix-new" style="flex:${r.newN}"></div>
-          <div class="mix-seg mix-t2" style="flex:${r.t2}"></div>
-          <div class="mix-seg mix-t3" style="flex:${r.t3}"></div>
+          <div class="mix-seg mix-new" style="flex:${r.newN||0.1}"></div>
+          <div class="mix-seg mix-t2"  style="flex:${r.t2||0.1}"></div>
+          <div class="mix-seg mix-t3"  style="flex:${r.t3||0.1}"></div>
         </div>
-        <div style="font-size:10px;color:var(--text-faint);margin-top:2px">${total>0?Math.round(r.newN/total*100):0}/${total>0?Math.round(r.t2/total*100):0}/${total>0?Math.round(r.t3/total*100):0}%</div>
+        <div style="font-size:10px;color:var(--text-faint);margin-top:2px">
+          ${total>0?Math.round(r.newN/total*100):0}/${total>0?Math.round(r.t2/total*100):0}/${total>0?Math.round(r.t3/total*100):0}%
+        </div>
       </td>`;
     tbody.appendChild(tr);
   });
 
   // Detail cards
-  const detailEl = document.getElementById('detail-cards');
-  detailEl.innerHTML = '<div class="grid-2">' + results.map(r => {
-    const m = r.middle;
-    return `<div class="card" style="margin-bottom:0">
+  document.getElementById('detail-cards').innerHTML =
+    '<div class="grid-2">' + results.map(r => `
+    <div class="card" style="margin-bottom:0">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
         <strong>${r.emp.name}</strong>
         <span class="badge badge-${r.group.toLowerCase()}">กลุ่ม ${r.group}</span>
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
         <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Capacity</span><strong style="font-family:var(--mono)">${r.capacity}</strong></div>
-        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">หัก Owner</span><strong style="font-family:var(--mono)">- ${r.owner}</strong></div>
-        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">หัก ช่วงเวลา</span><strong style="font-family:var(--mono)">- ${r.timeSlot}</strong></div>
-        <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:space-between"><span style="color:var(--text-muted)">เบอร์กลาง</span><strong style="font-family:var(--mono)">${r.middle}</strong></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">หัก Owner</span><span style="font-family:var(--mono)">− ${r.owner}</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">หัก ช่วงเวลา</span><span style="font-family:var(--mono)">− ${r.timeSlot}</span></div>
+        <div style="border-top:1px solid var(--border);padding-top:6px;display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">เบอร์กลาง</span><strong style="font-family:var(--mono)">${r.middle}</strong>
+        </div>
         <div style="display:flex;justify-content:space-between"><span style="display:flex;align-items:center;gap:4px"><span class="dot dot-new"></span>New</span><span class="badge badge-new">${r.newN} ใบ</span></div>
         <div style="display:flex;justify-content:space-between"><span style="display:flex;align-items:center;gap:4px"><span class="dot dot-t2"></span>T2</span><span class="badge badge-t2">${r.t2} ใบ</span></div>
         <div style="display:flex;justify-content:space-between"><span style="display:flex;align-items:center;gap:4px"><span class="dot dot-t3"></span>T3</span><span class="badge badge-t3">${r.t3} ใบ</span></div>
       </div>
       <div class="mix-bar" style="margin-top:10px;height:10px">
-        <div class="mix-seg mix-new" style="flex:${r.newN}"></div>
-        <div class="mix-seg mix-t2" style="flex:${r.t2}"></div>
-        <div class="mix-seg mix-t3" style="flex:${r.t3}"></div>
+        <div class="mix-seg mix-new" style="flex:${r.newN||0.1}"></div>
+        <div class="mix-seg mix-t2"  style="flex:${r.t2||0.1}"></div>
+        <div class="mix-seg mix-t3"  style="flex:${r.t3||0.1}"></div>
       </div>
-    </div>`;
-  }).join('') + '</div>';
+    </div>`).join('') + '</div>';
 
   // Score cards
-  const scoreEl = document.getElementById('score-cards');
   const wt3 = getNum('weightT3'), wt2 = 100 - wt3;
-  scoreEl.innerHTML = `<div class="alert alert-info" style="margin-bottom:16px">Composite Score = (T3 close% × ${wt3}%) + (T2→T3 conversion% × ${wt2}%)</div>` +
-    '<div class="grid-2">' + results.sort((a,b)=>b.score-a.score).map(r => `
+  document.getElementById('score-cards').innerHTML =
+    `<div class="alert alert-info" style="margin-bottom:16px">
+      Composite Score = (T3 close% × ${wt3}%) + (T2→T3 conversion% × ${wt2}%)
+    </div>` +
+    '<div class="grid-2">' +
+    [...results].sort((a,b) => b.score - a.score).map(r => `
     <div class="card" style="margin-bottom:0">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:8px">
           <strong>${r.emp.name}</strong>
           <span class="badge badge-${r.group.toLowerCase()}">กลุ่ม ${r.group}</span>
         </div>
-        <span style="font-size:24px;font-weight:700;font-family:var(--mono);color:var(--text)">${r.score.toFixed(1)}%</span>
+        <span style="font-size:24px;font-weight:700;font-family:var(--mono)">${r.score.toFixed(1)}%</span>
       </div>
       <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">
         (${r.emp.t3Close}% × ${wt3}%) + (${r.emp.t2Conv}% × ${wt2}%) = ${r.score.toFixed(1)}%
       </div>
       <div class="progress-wrap">
-        <div class="progress-fill" style="width:${Math.min(r.score,40)/40*100}%;background:${r.group==='A'?'var(--accent)':r.group==='B'?'var(--blue)':'#EF9F27'}"></div>
+        <div class="progress-fill" style="width:${Math.min(r.score,40)/40*100}%;
+          background:${r.group==='A'?'var(--accent)':r.group==='B'?'var(--blue)':'#EF9F27'}"></div>
       </div>
     </div>`).join('') + '</div>';
 }
 
-// ─────────────────────────────────────────────
-// PHONE POOL PAGE
-// ─────────────────────────────────────────────
+// ─── PHONE POOL ─────────────────────────────
 function renderPhoneTable() {
-  const search = document.getElementById('phone-search').value.toLowerCase();
-  const typeFilter = document.getElementById('phone-filter').value;
+  const search       = document.getElementById('phone-search').value.toLowerCase();
+  const typeFilter   = document.getElementById('phone-filter').value;
   const statusFilter = document.getElementById('status-filter').value;
 
-  const filtered = phonePool.filter(p => {
-    const matchSearch = !search || p.phone.includes(search) || p.name.toLowerCase().includes(search);
-    const matchType = !typeFilter || p.type === typeFilter;
-    const matchStatus = !statusFilter || p.status === statusFilter;
-    return matchSearch && matchType && matchStatus;
-  });
+  const filtered = phonePool.filter(p =>
+    (!search       || p.phone.includes(search) || p.name.toLowerCase().includes(search)) &&
+    (!typeFilter   || p.type   === typeFilter) &&
+    (!statusFilter || p.status === statusFilter)
+  );
 
   const tbody = document.getElementById('phone-tbody');
   const empty = document.getElementById('phone-empty');
+  empty.style.display = phonePool.length === 0 ? 'block' : 'none';
 
-  if (phonePool.length === 0) { tbody.innerHTML=''; empty.style.display='block'; }
-  else { empty.style.display='none'; }
+  const empOptions = '<option value="">ยังไม่ assign</option>' +
+    employees.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
 
-  const empOptions = ['<option value="">ยังไม่ assign</option>',
-    ...employees.map(e=>`<option value="${e.id}">${e.name}</option>`)].join('');
-
-  tbody.innerHTML = filtered.map((p,i) => `
+  tbody.innerHTML = filtered.map((p, i) => `
     <tr>
       <td style="color:var(--text-faint);font-family:var(--mono)">${i+1}</td>
-      <td><input type="text" value="${p.phone}" style="font-family:var(--mono);width:130px"
+      <td><input type="text" value="${escHtml(p.phone)}" style="width:130px;font-family:var(--mono)"
           onchange="updatePhone(${p.id},'phone',this.value)"></td>
-      <td><input type="text" value="${p.name}" style="width:120px"
+      <td><input type="text" value="${escHtml(p.name)}" style="width:120px"
           onchange="updatePhone(${p.id},'name',this.value)"></td>
       <td>
         <select class="type-select" onchange="updatePhone(${p.id},'type',this.value)"
           style="background:${p.type==='new'?'#EEEDFE':p.type==='t2'?'#E6F1FB':'#E1F5EE'};
                  color:${p.type==='new'?'#534AB7':p.type==='t2'?'#185FA5':'#0F6E56'}">
           <option value="new" ${p.type==='new'?'selected':''}>🟣 New</option>
-          <option value="t2" ${p.type==='t2'?'selected':''}>🔵 T2</option>
-          <option value="t3" ${p.type==='t3'?'selected':''}>🟢 T3</option>
+          <option value="t2"  ${p.type==='t2' ?'selected':''}>🔵 T2</option>
+          <option value="t3"  ${p.type==='t3' ?'selected':''}>🟢 T3</option>
         </select>
       </td>
       <td>
         <select class="type-select" onchange="updatePhone(${p.id},'status',this.value)"
           style="background:${p.status==='done'?'#E1F5EE':p.status==='assigned'?'#E6F1FB':'#F0EFE9'};
                  color:${p.status==='done'?'#0F6E56':p.status==='assigned'?'#185FA5':'#5F5E5A'}">
-          <option value="pending" ${p.status==='pending'?'selected':''}>⏳ Pending</option>
+          <option value="pending"  ${p.status==='pending' ?'selected':''}>⏳ Pending</option>
           <option value="assigned" ${p.status==='assigned'?'selected':''}>📋 Assigned</option>
-          <option value="done" ${p.status==='done'?'selected':''}>✅ Done</option>
+          <option value="done"     ${p.status==='done'    ?'selected':''}>✅ Done</option>
         </select>
       </td>
       <td>
-        <select class="type-select" onchange="updatePhone(${p.id},'assignedTo',+this.value)" style="background:var(--surface2)">
+        <select class="type-select" style="background:var(--surface2)"
+          onchange="updatePhone(${p.id},'assignedTo',+this.value)">
           ${empOptions.replace(`value="${p.assignedTo}"`, `value="${p.assignedTo}" selected`)}
         </select>
       </td>
-      <td><input type="text" value="${p.note}" placeholder="หมายเหตุ..." style="width:140px"
+      <td><input type="text" value="${escHtml(p.note)}" placeholder="หมายเหตุ..." style="width:140px"
           onchange="updatePhone(${p.id},'note',this.value)"></td>
       <td><button class="btn btn-danger" onclick="deletePhone(${p.id})">ลบ</button></td>
     </tr>`).join('');
 
-  // Pool summary chips
   const counts = { new:0, t2:0, t3:0 };
   phonePool.forEach(p => counts[p.type]++);
   document.getElementById('pool-summary').innerHTML = `
@@ -1106,40 +845,42 @@ function renderPhoneTable() {
     <div class="pool-chip"><span class="dot dot-t3"></span>T3: <strong>${counts.t3}</strong></div>
     <div class="pool-chip">รวม: <strong>${phonePool.length}</strong> เบอร์</div>
     <div class="pool-chip">Assigned: <strong>${phonePool.filter(p=>p.status==='assigned').length}</strong></div>
-    <div class="pool-chip" style="background:var(--accent-light)">Done: <strong style="color:var(--accent-dark)">${phonePool.filter(p=>p.status==='done').length}</strong></div>
-  `;
+    <div class="pool-chip" style="background:var(--accent-light)">Done: <strong style="color:var(--accent-dark)">${phonePool.filter(p=>p.status==='done').length}</strong></div>`;
 }
 
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
 function addPhone() {
-  phonePool.push({ id: nextPhoneId++, phone: '', name: '', type: 'new', status: 'pending', assignedTo: '', note: '' });
-  renderPhoneTable();
+  phonePool.push({ id:nextPhId++, phone:'', name:'', type:'new', status:'pending', assignedTo:'', note:'' });
+  savePhones(); renderPhoneTable();
 }
 
 function updatePhone(id, key, val) {
-  const p = phonePool.find(x=>x.id===id);
-  if (p) { p[key]=val; renderPhoneTable(); }
+  const p = phonePool.find(x => x.id === id);
+  if (p) { p[key] = val; savePhones(); renderPhoneTable(); }
 }
 
 function deletePhone(id) {
-  phonePool = phonePool.filter(x=>x.id!==id);
-  renderPhoneTable();
+  phonePool = phonePool.filter(x => x.id !== id);
+  savePhones(); renderPhoneTable();
 }
 
-function clearAll() {
-  if (confirm('ล้างเบอร์ทั้งหมดใน pool?')) { phonePool=[]; renderPhoneTable(); }
+function clearPhonePool() {
+  if (!confirm('ล้างเบอร์ทั้งหมดใน pool?')) return;
+  phonePool = []; savePhones(); renderPhoneTable();
 }
 
 function exportCSV() {
   if (!phonePool.length) { alert('ไม่มีข้อมูลใน pool'); return; }
   const header = 'phone,name,type,status,assigned_to,note';
   const rows = phonePool.map(p => {
-    const empName = employees.find(e=>e.id===p.assignedTo)?.name || '';
-    return [p.phone, p.name, p.type, p.status, empName, p.note].map(v=>`"${v}"`).join(',');
+    const empName = employees.find(e => e.id === p.assignedTo)?.name || '';
+    return [p.phone, p.name, p.type, p.status, empName, p.note].map(v => `"${v}"`).join(',');
   });
-  const csv = [header, ...rows].join('\n');
-  const blob = new Blob(['\ufeff'+csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = 'phone_pool_'+new Date().toISOString().slice(0,10)+'.csv';
+  const blob = new Blob(['\ufeff' + [header,...rows].join('\n')], { type:'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'phone_pool_' + new Date().toISOString().slice(0,10) + '.csv';
   a.click();
 }
 
@@ -1149,28 +890,29 @@ function handleCSV(e) {
   const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    const lines = ev.target.result.split('\n').filter(l=>l.trim());
+    const lines = ev.target.result.split('\n').filter(l => l.trim());
     let imported = 0;
     lines.slice(1).forEach(line => {
-      const cols = line.split(',').map(c=>c.replace(/^"|"$/g,'').trim());
+      const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
       if (cols[0]) {
-        phonePool.push({ id: nextPhoneId++, phone: cols[0]||'', name: cols[1]||'',
-          type: ['new','t2','t3'].includes(cols[2])?cols[2]:'new',
-          status: ['pending','assigned','done'].includes(cols[3])?cols[3]:'pending',
-          assignedTo: '', note: cols[5]||'' });
+        phonePool.push({
+          id: nextPhId++, phone: cols[0]||'', name: cols[1]||'',
+          type:   ['new','t2','t3'].includes(cols[2]) ? cols[2] : 'new',
+          status: ['pending','assigned','done'].includes(cols[3]) ? cols[3] : 'pending',
+          assignedTo: '', note: cols[5]||''
+        });
         imported++;
       }
     });
-    renderPhoneTable();
+    savePhones(); renderPhoneTable();
     alert(`Import สำเร็จ: ${imported} เบอร์`);
-    e.target.value='';
+    e.target.value = '';
   };
   reader.readAsText(file, 'UTF-8');
 }
 
-// ─────────────────────────────────────────────
-// INIT
-// ─────────────────────────────────────────────
+// ─── INIT ────────────────────────────────────
+loadAll();
 renderMixSettings();
 renderEmpSettings();
 </script>
