@@ -313,6 +313,7 @@
         </div>
       </div>
       <div class="pool-summary" id="pool-summary"></div>
+      <div id="owner-status" style="margin-bottom:8px"></div>
       <div id="distribute-check" style="margin-bottom:12px"></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
         <button class="btn btn-primary" onclick="distributeAndExport()">🎯 แจกเบอร์และ Export Excel</button>
@@ -494,11 +495,12 @@ function detectAndMergeTypes() {
   const MIX_TYPES = ['new','t2','t3'];
   found.forEach(t => {
     if (!typeConfig.find(c => c.type === t)) {
-      const isTime = t === 'time';
-      const isMix  = MIX_TYPES.includes(t);
+      const isOwner = t === 'owner';
+      const isTime  = t === 'time';
+      const isMix   = MIX_TYPES.includes(t);
       typeConfig.push({
         type:     t,
-        method:   isTime ? 'equal' : isMix ? 'mix' : 'equal',
+        method:   isOwner ? 'skip' : isTime ? 'equal' : isMix ? 'mix' : 'equal',
         priority: typeConfig.length + 1,
       });
     }
@@ -873,6 +875,27 @@ function updateThreshCDisplay() {
   if (el) el.value = '0 – ' + (b - 1) + '%';
 }
 
+// ─── COPY TO CLIPBOARD ──────────────────────
+function copyText(text, el) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = el.textContent;
+    el.textContent = '✓ copied';
+    el.style.background = 'var(--accent-light)';
+    el.style.color = 'var(--accent-dark)';
+    setTimeout(() => {
+      el.textContent = orig;
+      el.style.background = '';
+      el.style.color = '';
+    }, 1200);
+  }).catch(() => {
+    // fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+  });
+}
+
 // ─── RESULTS PAGE ───────────────────────────
 function renderResults() {
   const results = employees.map(emp => ({ emp, ...calcDistrib(emp) }));
@@ -1051,6 +1074,7 @@ function renderPhoneTable() {
     <div class="pool-chip">Assigned: <strong>${phonePool.filter(p=>p.status==='assigned').length}</strong></div>
     <div class="pool-chip" style="background:var(--accent-light)">Done: <strong style="color:var(--accent-dark)">${phonePool.filter(p=>p.status==='done').length}</strong></div>`;
   renderDistributeCheck();
+  renderOwnerStatus();
 }
 
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
@@ -1077,6 +1101,44 @@ function clearPhonePool() {
 
 function exportCSV() {}
 
+// ─── OWNER RESOLUTION ───────────────────────
+// normalize string for fuzzy match (lowercase, trim, collapse spaces)
+function normName(s) { return String(s||'').toLowerCase().trim().replace(/\s+/g,' '); }
+
+function resolveOwner(rawName) {
+  const n = normName(rawName);
+  if (!n) return null;
+  // exact match first
+  let emp = employees.find(e => normName(e.name) === n);
+  // fallback: includes match
+  if (!emp) emp = employees.find(e => normName(e.name).includes(n) || n.includes(normName(e.name)));
+  return emp || null;
+}
+
+// processImportedRows: shared by CSV and Excel
+// rows = [{ phone, type, ownerName }]
+// returns { imported, unmatched: [ownerName] }
+function processImportedRows(rows) {
+  const unmatched = new Set();
+  let imported = 0;
+  rows.forEach(r => {
+    const phone = r.phone; if (!phone) return;
+    const type  = (r.type || 'new').toLowerCase().trim() || 'new';
+    const isOwner = type === 'owner';
+    let assignedTo = '';
+    let status     = 'pending';
+    if (isOwner) {
+      const emp = resolveOwner(r.ownerName);
+      if (emp) { assignedTo = emp.id; status = 'assigned'; }
+      else if (r.ownerName) unmatched.add(r.ownerName);
+    }
+    phonePool.push({ id:nextPhId++, phone, name:'', type, status, assignedTo,
+      note: isOwner ? (r.ownerName || '') : '' });
+    imported++;
+  });
+  return { imported, unmatched: [...unmatched] };
+}
+
 function importCSV() { document.getElementById('csv-input').click(); }
 function importExcel() { document.getElementById('excel-input').click(); }
 
@@ -1085,17 +1147,13 @@ function handleCSV(e) {
   const reader = new FileReader();
   reader.onload = ev => {
     const lines = ev.target.result.split('\n').filter(l => l.trim());
-    let imported = 0;
-    lines.slice(1).forEach(line => {
+    const rows = lines.slice(1).map(line => {
       const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
-      if (cols[0]) {
-        const type = (cols[1]||'new').toLowerCase().trim() || 'new';
-        phonePool.push({ id:nextPhId++, phone:cols[0]||'', name:'', type, status:'pending', assignedTo:'', note:'' });
-        imported++;
-      }
-    });
+      return { phone: cols[0]||'', type: cols[1]||'new', ownerName: cols[2]||'' };
+    }).filter(r => r.phone);
+    const { imported, unmatched } = processImportedRows(rows);
     savePhones(); detectAndMergeTypes(); renderPhoneTable();
-    alert(`Import CSV สำเร็จ: ${imported} เบอร์`);
+    showImportResult(imported, unmatched);
     e.target.value = '';
   };
   reader.readAsText(file, 'UTF-8');
@@ -1109,22 +1167,88 @@ function handleExcel(e) {
     try {
       const wb   = XLSX.read(ev.target.result, { type:'binary', cellText:true });
       const ws   = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
-      let imported = 0;
-      rows.forEach((row, i) => {
-        if (i === 0) return;
-        const phone = String(row[0]||'').trim();
-        if (!phone) return;
-        const type = (String(row[1]||'new').toLowerCase().trim()) || 'new';
-        phonePool.push({ id:nextPhId++, phone, name:'', type, status:'pending', assignedTo:'', note:'' });
-        imported++;
-      });
+      const data = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+      const rows = data.slice(1).map(row => ({
+        phone:     String(row[0]||'').trim(),
+        type:      String(row[1]||'new').trim(),
+        ownerName: String(row[2]||'').trim(),
+      })).filter(r => r.phone);
+      const { imported, unmatched } = processImportedRows(rows);
       savePhones(); detectAndMergeTypes(); renderPhoneTable();
-      alert(`Import Excel สำเร็จ: ${imported} เบอร์`);
+      showImportResult(imported, unmatched);
     } catch(err) { alert('อ่านไฟล์ไม่ได้: ' + err.message); }
     e.target.value = '';
   };
   reader.readAsBinaryString(file);
+}
+
+function showImportResult(imported, unmatched) {
+  let msg = `Import สำเร็จ: ${imported} เบอร์`;
+  if (unmatched.length) {
+    msg += `\n\n⚠ ชื่อพนักงานต่อไปนี้ไม่พบในระบบ (${unmatched.length} ชื่อ):\n`;
+    msg += unmatched.map(n => `  • ${n}`).join('\n');
+    msg += '\n\nกรุณาไปแก้ชื่อพนักงานในหน้า "ตั้งค่าระบบ" ให้ตรง\nแล้วกด "Re-process OWNER" ในหน้าจัดการเบอร์';
+  }
+  alert(msg);
+}
+
+// ─── OWNER RE-PROCESS ────────────────────────
+function renderOwnerStatus() {
+  const el = document.getElementById('owner-status');
+  if (!el) return;
+  const pendingOwners = phonePool.filter(p => p.type === 'owner' && p.status === 'pending');
+  if (!pendingOwners.length) { el.innerHTML = ''; return; }
+
+  // group by ownerName note (we stored raw name in note field during import)
+  const nameSet = [...new Set(pendingOwners.map(p => p.note).filter(Boolean))];
+  const nameList = nameSet.length
+    ? nameSet.map(n => `<span onclick="copyText('${escHtml(n)}',this)" style="background:var(--red-light);color:var(--red);padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;transition:background 0.2s,color 0.2s" title="คลิกเพื่อ copy">${escHtml(n)}</span>`).join(' ')
+    : '';
+
+  el.innerHTML = `
+    <div style="background:var(--amber-light);border-left:3px solid #EF9F27;border-radius:0 var(--r) var(--r) 0;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;font-weight:500;color:var(--amber);margin-bottom:4px">
+          ⚠ OWNER ที่ยังไม่ได้ assign: <strong>${pendingOwners.length}</strong> เบอร์
+        </div>
+        <div style="font-size:12px;color:var(--text-muted)">
+          ชื่อที่ match ไม่ได้: ${nameList || '<span style="color:var(--text-faint)">ไม่มีข้อมูลชื่อ</span>'}
+        </div>
+        <div style="font-size:11px;color:var(--text-faint);margin-top:4px">แก้ชื่อพนักงานในหน้า "ตั้งค่าระบบ" ให้ตรงแล้วกด Re-process</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="reprocessOwner()" style="white-space:nowrap">
+        🔄 Re-process OWNER (${pendingOwners.length})
+      </button>
+    </div>`;
+}
+
+function reprocessOwner() {
+  const pendingOwners = phonePool.filter(p => p.type === 'owner' && p.status === 'pending');
+  if (!pendingOwners.length) { alert('ไม่มี OWNER ที่ค้างอยู่'); return; }
+
+  let matched = 0, stillUnmatched = [];
+  pendingOwners.forEach(p => {
+    const rawName = p.note || '';
+    const emp     = resolveOwner(rawName);
+    if (emp) {
+      p.assignedTo = emp.id;
+      p.status     = 'assigned';
+      matched++;
+    } else {
+      if (rawName) stillUnmatched.push(rawName);
+    }
+  });
+
+  savePhones(); renderPhoneTable();
+
+  let msg = `Re-process เสร็จสิ้น\nAssign สำเร็จ: ${matched} เบอร์`;
+  if (stillUnmatched.length) {
+    const unique = [...new Set(stillUnmatched)];
+    msg += `\n\nยังไม่พบในระบบ (${unique.length} ชื่อ):\n`;
+    msg += unique.map(n => `  • ${n}`).join('\n');
+    msg += '\n\nกรุณาตรวจสอบชื่อพนักงานในหน้าตั้งค่าระบบอีกครั้ง';
+  }
+  alert(msg);
 }
 
 // ─── TYPE CONFIG UI ──────────────────────────
@@ -1249,6 +1373,15 @@ function distributeAndExport() {
   localStorage.setItem(SK.rrIndex, JSON.stringify(rrIndex));
   renderPhoneTable();
 
+  // ดึง OWNER ที่ assigned แล้วใส่ใน plan ของแต่ละคนก่อน export
+  phonePool.filter(p => p.type === 'owner' && p.status === 'assigned' && p.assignedTo).forEach(ph => {
+    const p = plan.find(x => x.emp.id === ph.assignedTo);
+    if (p) {
+      if (!p.assigned['owner']) p.assigned['owner'] = [];
+      p.assigned['owner'].push(ph);
+    }
+  });
+
   // Export Excel
   const wb   = XLSX.utils.book_new();
   const today = new Date().toLocaleDateString('th-TH');
@@ -1264,13 +1397,15 @@ function distributeAndExport() {
   wsSummary['!cols'] = [{wch:18},{wch:8},{wch:20},{wch:14}];
   XLSX.utils.book_append_sheet(wb, wsSummary, 'สรุปรวม');
 
-  // Sheet รายคน
+  // Sheet รายคน — สร้างให้ทุกคนที่มีเบอร์ (ทั้ง assigned จาก distribute และ OWNER)
   plan.forEach(p => {
     const rows = [['Phone No.', 'Type', 'วันที่']];
-    // เรียงตาม priority
-    typeConfig.forEach(c => {
+    // เรียงตาม priority (non-owner types)
+    typeConfig.filter(c => c.method !== 'skip').forEach(c => {
       (p.assigned[c.type]||[]).forEach(ph => rows.push([ph.phone, c.type.toUpperCase(), today]));
     });
+    // OWNER ท้ายเสมอ
+    (p.assigned['owner']||[]).forEach(ph => rows.push([ph.phone, 'OWNER', today]));
     if (rows.length > 1) {
       const ws = XLSX.utils.aoa_to_sheet(rows);
       ws['!cols'] = [{wch:18},{wch:8},{wch:14}];
