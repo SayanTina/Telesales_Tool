@@ -293,11 +293,15 @@
         <span style="font-size:12px;color:var(--text-muted)">แจกเบอร์จาก pool ให้พนักงานตามเงื่อนไข แล้ว export .xlsx แยก sheet รายคน</span>
       </div>
     </div>
+    <div class="card" id="type-config-card" style="display:none">
+      <div class="card-title">ตั้งค่าประเภทเบอร์และลำดับการแจก</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">กำหนดวิธีแจกและลำดับ priority — แจกตามลำดับจากบนลงล่าง กด ↑↓ เพื่อเปลี่ยนลำดับ</div>
+      <div id="type-config-list"></div>
+    </div>
     <div class="card">
       <div class="section-hd">
         <div class="card-title" style="margin:0">Pool เบอร์ทั้งหมด</div>
       </div>
-      <div class="phone-controls">
         <div>
           <label>ค้นหาเบอร์หรือชื่อ</label>
           <input type="text" id="phone-search" placeholder="ค้นหา..." oninput="renderPhoneTable()">
@@ -345,12 +349,13 @@
 <script>
 // ─── STORAGE KEYS ───────────────────────────
 const SK = {
-  employees: 'ts_employees',
-  settings:  'ts_settings',
-  mix:       'ts_mix',
-  phones:    'ts_phones',
-  nextEmpId: 'ts_nextEmpId',
-  nextPhId:  'ts_nextPhId',
+  employees:  'ts_employees',
+  settings:   'ts_settings',
+  mix:        'ts_mix',
+  phones:     'ts_phones',
+  nextEmpId:  'ts_nextEmpId',
+  nextPhId:   'ts_nextPhId',
+  typeConfig: 'ts_typeConfig',
 };
 
 // ─── DEFAULTS ───────────────────────────────
@@ -379,22 +384,27 @@ const DEFAULT_MIX = {
 };
 
 // ─── STATE ──────────────────────────────────
-let employees = [];
+let employees  = [];
 let phonePool  = [];
 let nextEmpId  = 11;
 let nextPhId   = 1;
 let MIX        = JSON.parse(JSON.stringify(DEFAULT_MIX));
 let saveTimer  = null;
+// typeConfig: [{ type, method:'equal'|'mix', priority }]
+// method 'equal' = แจกเท่ากันทุกคน (ใช้ timeSlot config สำหรับ TIME)
+// method 'mix'   = แจกตาม Mix% กลุ่ม
+let typeConfig = [];
 
 // ─── LOCALSTORAGE ────────────────────────────
 function loadAll() {
   try {
-    employees = JSON.parse(localStorage.getItem(SK.employees)) || JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES));
-    phonePool  = JSON.parse(localStorage.getItem(SK.phones))    || [];
-    nextEmpId  = parseInt(localStorage.getItem(SK.nextEmpId))   || 11;
-    nextPhId   = parseInt(localStorage.getItem(SK.nextPhId))    || 1;
-    MIX        = JSON.parse(localStorage.getItem(SK.mix))       || JSON.parse(JSON.stringify(DEFAULT_MIX));
-    const s    = JSON.parse(localStorage.getItem(SK.settings))  || DEFAULT_SETTINGS;
+    employees  = JSON.parse(localStorage.getItem(SK.employees))   || JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES));
+    phonePool  = JSON.parse(localStorage.getItem(SK.phones))      || [];
+    nextEmpId  = parseInt(localStorage.getItem(SK.nextEmpId))     || 11;
+    nextPhId   = parseInt(localStorage.getItem(SK.nextPhId))      || 1;
+    MIX        = JSON.parse(localStorage.getItem(SK.mix))         || JSON.parse(JSON.stringify(DEFAULT_MIX));
+    typeConfig = JSON.parse(localStorage.getItem(SK.typeConfig))  || [];
+    const s    = JSON.parse(localStorage.getItem(SK.settings))    || DEFAULT_SETTINGS;
     applySettings(s);
   } catch(e) { console.warn('localStorage load error', e); }
 }
@@ -437,6 +447,36 @@ function saveEmployees() {
 function saveMix() {
   localStorage.setItem(SK.mix, JSON.stringify(MIX));
   flashSaved();
+}
+
+function saveTypeConfig() {
+  localStorage.setItem(SK.typeConfig, JSON.stringify(typeConfig));
+  flashSaved();
+}
+
+// detect distinct types from pool and merge with existing config
+function detectAndMergeTypes() {
+  const found = [...new Set(phonePool.map(p => p.type.toLowerCase()))];
+  const MIX_TYPES = ['new','t2','t3'];
+  found.forEach(t => {
+    if (!typeConfig.find(c => c.type === t)) {
+      const isTime = t === 'time';
+      const isMix  = MIX_TYPES.includes(t);
+      typeConfig.push({
+        type:     t,
+        method:   isTime ? 'equal' : isMix ? 'mix' : 'equal',
+        priority: typeConfig.length + 1,
+      });
+    }
+  });
+  // remove types no longer in pool
+  typeConfig = typeConfig.filter(c => found.includes(c.type));
+  // re-assign priority sequentially
+  typeConfig.sort((a,b) => a.priority - b.priority);
+  typeConfig.forEach((c,i) => c.priority = i+1);
+  saveTypeConfig();
+  renderTypeConfig();
+  renderDistributeCheck();
 }
 
 function savePhones() {
@@ -894,13 +934,12 @@ function handleCSV(e) {
     lines.slice(1).forEach(line => {
       const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
       if (cols[0]) {
-        const rawType = (cols[1]||'').toLowerCase().replace(/\s/g,'');
-        const type = rawType==='t2'?'t2':rawType==='t3'?'t3':'new';
+        const type = (cols[1]||'new').toLowerCase().trim() || 'new';
         phonePool.push({ id:nextPhId++, phone:cols[0]||'', name:'', type, status:'pending', assignedTo:'', note:'' });
         imported++;
       }
     });
-    savePhones(); renderPhoneTable();
+    savePhones(); detectAndMergeTypes(); renderPhoneTable();
     alert(`Import CSV สำเร็จ: ${imported} เบอร์`);
     e.target.value = '';
   };
@@ -913,20 +952,19 @@ function handleExcel(e) {
   const reader = new FileReader();
   reader.onload = ev => {
     try {
-      const wb = XLSX.read(ev.target.result, { type:'binary', cellText:true });
-      const ws = wb.Sheets[wb.SheetNames[0]];
+      const wb   = XLSX.read(ev.target.result, { type:'binary', cellText:true });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
       let imported = 0;
       rows.forEach((row, i) => {
         if (i === 0) return;
         const phone = String(row[0]||'').trim();
         if (!phone) return;
-        const rawType = String(row[1]||'').toLowerCase().trim().replace(/\s/g,'');
-        const type = rawType==='t2'?'t2':rawType==='t3'?'t3':'new';
+        const type = (String(row[1]||'new').toLowerCase().trim()) || 'new';
         phonePool.push({ id:nextPhId++, phone, name:'', type, status:'pending', assignedTo:'', note:'' });
         imported++;
       });
-      savePhones(); renderPhoneTable();
+      savePhones(); detectAndMergeTypes(); renderPhoneTable();
       alert(`Import Excel สำเร็จ: ${imported} เบอร์`);
     } catch(err) { alert('อ่านไฟล์ไม่ได้: ' + err.message); }
     e.target.value = '';
@@ -934,45 +972,140 @@ function handleExcel(e) {
   reader.readAsBinaryString(file);
 }
 
+// ─── TYPE CONFIG UI ──────────────────────────
+function renderTypeConfig() {
+  const card = document.getElementById('type-config-card');
+  const list = document.getElementById('type-config-list');
+  if (!card || !list) return;
+  card.style.display = typeConfig.length ? '' : 'none';
+  if (!typeConfig.length) return;
+
+  const MIX_TYPES = ['new','t2','t3'];
+  const typeColors = { time:'#FAEEDA', new:'#EEEDFE', t2:'#E6F1FB', t3:'#E1F5EE' };
+  const typeText   = { time:'#633806', new:'#3C3489', t2:'#0C447C', t3:'#085041' };
+
+  list.innerHTML = typeConfig.map((c, i) => {
+    const bg   = typeColors[c.type] || '#F0EFE9';
+    const col  = typeText[c.type]   || '#444441';
+    const isMixType = MIX_TYPES.includes(c.type);
+    const isFirst = i === 0, isLast = i === typeConfig.length - 1;
+    return `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:0.5px solid var(--border);border-radius:var(--r);margin-bottom:6px;background:var(--surface)">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <button onclick="moveType(${i},-1)" ${isFirst?'disabled':''} style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text-muted);padding:0;line-height:1;opacity:${isFirst?0.3:1}">▲</button>
+        <button onclick="moveType(${i}, 1)" ${isLast? 'disabled':''} style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text-muted);padding:0;line-height:1;opacity:${isLast?0.3:1}">▼</button>
+      </div>
+      <span style="font-size:11px;color:var(--text-faint);font-family:var(--mono);min-width:16px">${i+1}</span>
+      <span style="background:${bg};color:${col};padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;min-width:60px;text-align:center">${c.type.toUpperCase()}</span>
+      <div style="flex:1;display:flex;align-items:center;gap:8px">
+        <label style="margin:0;font-size:12px;color:var(--text-muted)">วิธีแจก:</label>
+        <select style="width:auto;padding:4px 8px;font-size:12px" onchange="updateTypeMethod(${i},this.value)">
+          <option value="equal" ${c.method==='equal'?'selected':''}>เท่ากันทุกคน</option>
+          ${isMixType ? `<option value="mix" ${c.method==='mix'?'selected':''}>ตาม Mix% กลุ่ม</option>` : ''}
+          <option value="skip" ${c.method==='skip'?'selected':''}>ข้าม (ไม่แจก)</option>
+        </select>
+        ${c.method==='equal' ? `
+        <label style="margin:0;font-size:12px;color:var(--text-muted)">จำนวน/คน:</label>
+        <select style="width:auto;padding:4px 8px;font-size:12px" onchange="updateTypeCount(${i},this.value)">
+          <option value="timeslot" ${(!c.countOverride)?'selected':''}>ดึงจาก config (${getNum('timeSlot')})</option>
+          <option value="custom"   ${c.countOverride?'selected':''}>กำหนดเอง</option>
+        </select>
+        ${c.countOverride ? `<input type="number" value="${c.countOverride}" min="0" style="width:70px;padding:4px 8px;font-size:12px" onchange="updateTypeCustomCount(${i},+this.value)">` : ''}
+        ` : ''}
+      </div>
+      <span style="font-size:11px;color:var(--text-faint)">${phonePool.filter(p=>p.type===c.type&&p.status==='pending').length} ใน pool</span>
+    </div>`;
+  }).join('');
+}
+
+function moveType(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= typeConfig.length) return;
+  [typeConfig[idx], typeConfig[newIdx]] = [typeConfig[newIdx], typeConfig[idx]];
+  typeConfig.forEach((c,i) => c.priority = i+1);
+  saveTypeConfig(); renderTypeConfig(); renderDistributeCheck();
+}
+
+function updateTypeMethod(idx, val) {
+  typeConfig[idx].method = val;
+  if (val !== 'equal') delete typeConfig[idx].countOverride;
+  saveTypeConfig(); renderTypeConfig(); renderDistributeCheck();
+}
+
+function updateTypeCount(idx, val) {
+  if (val === 'custom') typeConfig[idx].countOverride = getNum('timeSlot');
+  else delete typeConfig[idx].countOverride;
+  saveTypeConfig(); renderTypeConfig();
+}
+
+function updateTypeCustomCount(idx, val) {
+  typeConfig[idx].countOverride = val;
+  saveTypeConfig(); renderDistributeCheck();
+}
+
 // ─── DISTRIBUTE & EXPORT EXCEL ───────────────
 function distributeAndExport() {
   if (!phonePool.length) { alert('ไม่มีเบอร์ใน pool'); return; }
   if (typeof XLSX === 'undefined') { alert('กำลังโหลด library กรุณารอสักครู่แล้วลองใหม่'); return; }
+  if (!typeConfig.length) { alert('กรุณา import ไฟล์ก่อนเพื่อให้ระบบ detect ประเภทเบอร์'); return; }
 
-  // 1. คำนวณว่าแต่ละคนต้องการ New/T2/T3 กี่ใบ
-  const plan = employees.map(emp => {
-    const d = calcDistrib(emp);
-    return { emp, need:{ new:d.newN, t2:d.t2, t3:d.t3 }, assigned:{ new:[], t2:[], t3:[] } };
+  const pending = phonePool.filter(p => p.status === 'pending');
+
+  // สร้าง pool แยกตาม type พร้อม shuffle
+  const poolByType = {};
+  pending.forEach(p => {
+    if (!poolByType[p.type]) poolByType[p.type] = [];
+    poolByType[p.type].push(p);
+  });
+  Object.values(poolByType).forEach(arr => {
+    for (let i = arr.length-1; i > 0; i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]] = [arr[j],arr[i]];
+    }
   });
 
-  // 2. สร้าง pool แยกตาม type (shuffle เพื่อความสุ่ม)
-  const pool = { new:[], t2:[], t3:[] };
-  phonePool.filter(p => p.status === 'pending').forEach(p => pool[p.type]?.push(p));
-  ['new','t2','t3'].forEach(t => { for(let i=pool[t].length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[t][i],pool[t][j]]=[pool[t][j],pool[t][i]];} });
+  // plan: แต่ละ emp จะได้ assigned[type] = []
+  const plan = employees.map(emp => ({ emp, assigned:{} }));
+  const distrib = employees.map(emp => calcDistrib(emp));
 
-  // 3. แจกเบอร์ให้แต่ละคนตาม need
-  plan.forEach(p => {
-    ['new','t2','t3'].forEach(t => {
-      const take = pool[t].splice(0, p.need[t]);
-      p.assigned[t] = take;
-      take.forEach(ph => { ph.assignedTo = p.emp.id; ph.status = 'assigned'; });
-    });
+  // แจกตาม priority
+  typeConfig.forEach(c => {
+    if (c.method === 'skip') return;
+    const typePool = poolByType[c.type] || [];
+
+    if (c.method === 'equal') {
+      // เท่ากันทุกคน
+      const perPerson = c.countOverride != null ? c.countOverride : getNum('timeSlot');
+      plan.forEach(p => {
+        const take = typePool.splice(0, perPerson);
+        if (!p.assigned[c.type]) p.assigned[c.type] = [];
+        p.assigned[c.type].push(...take);
+        take.forEach(ph => { ph.assignedTo = p.emp.id; ph.status = 'assigned'; });
+      });
+    } else {
+      // mix — แจกตาม calcDistrib
+      plan.forEach((p, i) => {
+        const d = distrib[i];
+        const need = c.type==='new' ? d.newN : c.type==='t2' ? d.t2 : c.type==='t3' ? d.t3 : 0;
+        const take = typePool.splice(0, need);
+        if (!p.assigned[c.type]) p.assigned[c.type] = [];
+        p.assigned[c.type].push(...take);
+        take.forEach(ph => { ph.assignedTo = p.emp.id; ph.status = 'assigned'; });
+      });
+    }
   });
 
-  savePhones();
-  renderPhoneTable();
+  savePhones(); renderPhoneTable();
 
-  // 4. สร้าง workbook
-  const wb = XLSX.utils.book_new();
+  // Export Excel
+  const wb   = XLSX.utils.book_new();
   const today = new Date().toLocaleDateString('th-TH');
 
   // Sheet สรุปรวม
   const summaryRows = [['Phone No.', 'Type', 'Staff', 'วันที่']];
   plan.forEach(p => {
-    ['new','t2','t3'].forEach(t => {
-      p.assigned[t].forEach(ph => {
-        summaryRows.push([ph.phone, t.toUpperCase(), p.emp.name, today]);
-      });
+    Object.entries(p.assigned).forEach(([t, phones]) => {
+      phones.forEach(ph => summaryRows.push([ph.phone, t.toUpperCase(), p.emp.name, today]));
     });
   });
   const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
@@ -982,24 +1115,21 @@ function distributeAndExport() {
   // Sheet รายคน
   plan.forEach(p => {
     const rows = [['Phone No.', 'Type', 'วันที่']];
-    ['new','t2','t3'].forEach(t => {
-      p.assigned[t].forEach(ph => rows.push([ph.phone, t.toUpperCase(), today]));
+    // เรียงตาม priority
+    typeConfig.forEach(c => {
+      (p.assigned[c.type]||[]).forEach(ph => rows.push([ph.phone, c.type.toUpperCase(), today]));
     });
     if (rows.length > 1) {
       const ws = XLSX.utils.aoa_to_sheet(rows);
       ws['!cols'] = [{wch:18},{wch:8},{wch:14}];
-      const sheetName = p.emp.name.slice(0,31);
-      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      XLSX.utils.book_append_sheet(wb, ws, p.emp.name.slice(0,31));
     }
   });
 
-  // 5. Download
-  const fname = 'telesales_' + new Date().toISOString().slice(0,10) + '.xlsx';
-  XLSX.writeFile(wb, fname);
+  XLSX.writeFile(wb, 'telesales_' + new Date().toISOString().slice(0,10) + '.xlsx');
 
-  // 6. แสดง summary
-  const totalAssigned = plan.reduce((s,p) => s + p.assigned.new.length + p.assigned.t2.length + p.assigned.t3.length, 0);
-  const remaining = phonePool.filter(p => p.status === 'pending').length;
+  const totalAssigned = plan.reduce((s,p) => s + Object.values(p.assigned).flat().length, 0);
+  const remaining     = phonePool.filter(p => p.status === 'pending').length;
   renderDistributeCheck();
   alert(`แจกเบอร์สำเร็จ ${totalAssigned} เบอร์\nเบอร์คงเหลือใน pool: ${remaining} เบอร์\nไฟล์ถูก export เรียบร้อยแล้ว`);
 }
@@ -1008,35 +1138,56 @@ function distributeAndExport() {
 function renderDistributeCheck() {
   const el = document.getElementById('distribute-check');
   if (!el) return;
-  const counts = { new:0, t2:0, t3:0 };
-  phonePool.filter(p => p.status === 'pending').forEach(p => counts[p.type]++);
+  if (!typeConfig.length) { el.innerHTML = ''; return; }
 
-  const needed = employees.reduce((acc, emp) => {
-    const d = calcDistrib(emp);
-    acc.new += d.newN; acc.t2 += d.t2; acc.t3 += d.t3;
-    return acc;
-  }, { new:0, t2:0, t3:0 });
+  const pendingCounts = {};
+  phonePool.filter(p => p.status==='pending').forEach(p => {
+    pendingCounts[p.type] = (pendingCounts[p.type]||0) + 1;
+  });
 
-  const rows = ['new','t2','t3'].map(t => {
-    const ok = counts[t] >= needed[t];
-    const label = t.toUpperCase();
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px">
-      <span style="color:var(--text-muted)">${label} ที่ทีมต้องการ</span>
+  const rows = typeConfig.filter(c => c.method !== 'skip').map(c => {
+    const have = pendingCounts[c.type] || 0;
+    let need = 0;
+    if (c.method === 'equal') {
+      const perPerson = c.countOverride != null ? c.countOverride : getNum('timeSlot');
+      need = perPerson * employees.length;
+    } else {
+      need = employees.reduce((s, emp) => {
+        const d = calcDistrib(emp);
+        return s + (c.type==='new'?d.newN:c.type==='t2'?d.t2:c.type==='t3'?d.t3:0);
+      }, 0);
+    }
+    const ok = have >= need;
+    const methodLabel = c.method==='equal' ? 'เท่ากันทุกคน' : 'Mix% กลุ่ม';
+    return `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px;border-bottom:0.5px solid var(--border)">
+      <span style="display:flex;align-items:center;gap:8px">
+        <span style="font-weight:600;min-width:50px">${c.type.toUpperCase()}</span>
+        <span style="font-size:11px;color:var(--text-faint)">${methodLabel}</span>
+        <span style="font-size:11px;color:var(--text-faint)">priority ${c.priority}</span>
+      </span>
       <span>
-        <strong>${needed[t]}</strong> ใบ / มีใน pool <strong>${counts[t]}</strong> ใบ
+        ต้องการ <strong>${need}</strong> / มี <strong>${have}</strong>
         ${ok
           ? '<span style="color:var(--accent-dark);margin-left:6px">✓</span>'
-          : `<span style="color:var(--red);margin-left:6px">⚠ ขาด ${needed[t]-counts[t]} ใบ</span>`}
+          : `<span style="color:var(--red);margin-left:6px">⚠ ขาด ${need-have}</span>`}
       </span>
     </div>`;
   }).join('');
 
-  const hasShortfall = ['new','t2','t3'].some(t => counts[t] < needed[t]);
+  const hasShortfall = typeConfig.filter(c=>c.method!=='skip').some(c => {
+    const have = pendingCounts[c.type]||0;
+    const perPerson = c.countOverride!=null?c.countOverride:getNum('timeSlot');
+    const need = c.method==='equal' ? perPerson*employees.length
+      : employees.reduce((s,emp)=>{const d=calcDistrib(emp);return s+(c.type==='new'?d.newN:c.type==='t2'?d.t2:c.type==='t3'?d.t3:0);},0);
+    return have < need;
+  });
+
   el.innerHTML = `
     <div style="background:var(--surface2);border-radius:var(--r);padding:12px 14px;margin-bottom:12px">
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:8px">ตรวจสอบ pool ก่อนแจก</div>
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:8px">ตรวจสอบ pool ก่อนแจก (เรียงตาม priority)</div>
       ${rows}
-      ${hasShortfall ? '<div class="alert alert-warn" style="margin-top:8px;margin-bottom:0">เบอร์บาง type ไม่พอ — ระบบจะแจกเท่าที่มีและข้ามเบอร์ที่ขาด</div>' : ''}
+      ${hasShortfall ? '<div class="alert alert-warn" style="margin-top:8px;margin-bottom:0">เบอร์บาง type ไม่พอ — ระบบจะแจกเท่าที่มีและข้าม type ที่ขาด</div>' : '<div style="font-size:12px;color:var(--accent-dark);margin-top:8px">✓ pool มีเพียงพอสำหรับการแจก</div>'}
     </div>`;
 }
 
@@ -1044,6 +1195,8 @@ function renderDistributeCheck() {
 loadAll();
 renderMixSettings();
 renderEmpSettings();
+renderTypeConfig();
+renderDistributeCheck();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </body>
