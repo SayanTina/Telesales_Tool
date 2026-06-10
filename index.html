@@ -141,11 +141,7 @@
 
     <div class="card">
       <div class="card-title">ตั้งค่าทั่วไป</div>
-      <div class="grid-3">
-        <div>
-          <label>เบอร์ช่วงเวลา (หักเท่ากันทุกคน)</label>
-          <input type="number" id="timeSlot" value="15" min="0" onchange="saveSettings()">
-        </div>
+      <div class="grid-2">
         <div>
           <label>Composite Score: น้ำหนัก T3 close%</label>
           <div class="range-row">
@@ -159,60 +155,90 @@
             น้ำหนัก T2→T3 conversion: <span id="wt2val" style="font-weight:600">40%</span>
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;justify-content:flex-end;">
+        <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="exportConfig()">↓ Export Config (.json)</button>
+          <button class="btn btn-ghost btn-sm" onclick="importConfig()">↑ Import Config (.json)</button>
           <button class="btn btn-ghost btn-sm" onclick="resetAll()" style="border-color:var(--red);color:var(--red)">🗑 ล้างข้อมูลทั้งหมด</button>
         </div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-title">เกณฑ์กลุ่มและน้ำหนักเบอร์</div>
-      <div class="grid-3">
-        <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;border-top:3px solid var(--accent)">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <span class="badge badge-a">กลุ่ม A</span>
-            <span style="font-size:11px;color:var(--text-muted)">score สูง</span>
-          </div>
-          <label>Score ขั้นต่ำ (%)</label>
-          <input type="number" id="threshA" value="20" min="0" max="100" onchange="saveSettings(); renderEmpSettings()">
-          <div style="margin-top:10px">
-            <label>Weight เบอร์ที่ได้</label>
-            <input type="number" id="weightA" value="130" min="1" onchange="saveSettings()">
-          </div>
-        </div>
-        <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;border-top:3px solid var(--blue)">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <span class="badge badge-b">กลุ่ม B</span>
-            <span style="font-size:11px;color:var(--text-muted)">score กลาง</span>
-          </div>
-          <label>Score ขั้นต่ำ (%)</label>
-          <input type="number" id="threshB" value="15" min="0" max="100" onchange="saveSettings(); renderEmpSettings()">
-          <div style="margin-top:10px">
-            <label>Weight เบอร์ที่ได้</label>
-            <input type="number" id="weightB" value="110" min="1" onchange="saveSettings()">
-          </div>
-        </div>
-        <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;border-top:3px solid #EF9F27">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <span class="badge badge-c">กลุ่ม C</span>
-            <span style="font-size:11px;color:var(--text-muted)">score ต่ำ</span>
-          </div>
-          <label>Score (0 ถึงต่ำกว่า B)</label>
-          <input type="number" id="threshC_display" disabled style="background:var(--surface2);color:var(--text-faint)">
-          <div style="margin-top:10px">
-            <label>Weight เบอร์ที่ได้</label>
-            <input type="number" id="weightC" value="100" min="1" onchange="saveSettings()">
-          </div>
+    <div class="card" id="group-config-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div class="card-title" style="margin:0">เกณฑ์กลุ่มและน้ำหนักเบอร์</div>
+        <div id="admin-lock-ui">
+          <span id="lock-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--amber-light);color:var(--amber);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500">
+            🔒 ล็อคอยู่
+          </span>
+          <button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="promptAdminUnlock()">ปลดล็อค</button>
+          <button class="btn btn-ghost btn-sm" id="btn-lock-again" style="margin-left:4px;display:none" onclick="lockAdmin()">ล็อคอีกครั้ง</button>
         </div>
       </div>
-      <div class="alert alert-info" style="margin-top:14px;margin-bottom:0">
-        <strong>Weight คืออะไร?</strong> ตัวเลขสัมพัทธ์ที่กำหนดสัดส่วนเบอร์กลาง — กลุ่ม A ได้ตามอัตราส่วน weight A / (weight A + B + C) × เบอร์กลางรวม ไม่ใช่จำนวนตรงๆ
+      <div id="group-config-overlay" style="position:relative">
+        <div id="group-config-mask" style="position:absolute;inset:0;background:rgba(247,246,242,0.7);backdrop-filter:blur(3px);border-radius:var(--r-lg);z-index:10;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
+          <span style="font-size:13px;color:var(--text-muted)">🔒 ต้องปลดล็อคก่อนแก้ไข</span>
+          <button class="btn btn-ghost btn-sm" onclick="promptAdminUnlock()">ใส่ Passkey</button>
+        </div>
+        <div class="grid-3">
+          <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;border-top:3px solid var(--accent)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <span class="badge badge-a">กลุ่ม A</span>
+              <span style="font-size:11px;color:var(--text-muted)">score สูง</span>
+            </div>
+            <label>Score ขั้นต่ำ (%)</label>
+            <input type="number" id="threshA" value="20" min="0" max="100" onchange="saveSettings(); renderEmpSettings()">
+            <div style="margin-top:10px">
+              <label>Weight เบอร์ที่ได้</label>
+              <input type="number" id="weightA" value="130" min="1" onchange="saveSettings()">
+            </div>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;border-top:3px solid var(--blue)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <span class="badge badge-b">กลุ่ม B</span>
+              <span style="font-size:11px;color:var(--text-muted)">score กลาง</span>
+            </div>
+            <label>Score ขั้นต่ำ (%)</label>
+            <input type="number" id="threshB" value="15" min="0" max="100" onchange="saveSettings(); renderEmpSettings()">
+            <div style="margin-top:10px">
+              <label>Weight เบอร์ที่ได้</label>
+              <input type="number" id="weightB" value="110" min="1" onchange="saveSettings()">
+            </div>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;border-top:3px solid #EF9F27">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <span class="badge badge-c">กลุ่ม C</span>
+              <span style="font-size:11px;color:var(--text-muted)">score ต่ำ</span>
+            </div>
+            <label>Score (0 ถึงต่ำกว่า B)</label>
+            <input type="number" id="threshC_display" disabled style="background:var(--surface2);color:var(--text-faint)">
+            <div style="margin-top:10px">
+              <label>Weight เบอร์ที่ได้</label>
+              <input type="number" id="weightC" value="100" min="1" onchange="saveSettings()">
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-info" style="margin-top:14px;margin-bottom:0">
+          <strong>Weight คืออะไร?</strong> ตัวเลขสัมพัทธ์ที่กำหนดสัดส่วนเบอร์กลาง — กลุ่ม A ได้ตามอัตราส่วน weight A / (A+B+C) × เบอร์กลางรวม
+        </div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-title">สัดส่วน Mix เบอร์กลาง (New / T2 / T3)</div>
-      <div id="mix-settings"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div class="card-title" style="margin:0">สัดส่วน Mix เบอร์กลาง (New / T2 / T3)</div>
+        <div id="mix-lock-ui">
+          <span id="mix-lock-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--amber-light);color:var(--amber);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500">🔒 ล็อคอยู่</span>
+          <button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="promptMixUnlock()">ปลดล็อค</button>
+          <button class="btn btn-ghost btn-sm" id="btn-mix-lock-again" style="margin-left:4px;display:none" onclick="lockMix()">ล็อคอีกครั้ง</button>
+        </div>
+      </div>
+      <div style="position:relative">
+        <div id="mix-config-mask" style="position:absolute;inset:0;background:rgba(247,246,242,0.7);backdrop-filter:blur(3px);border-radius:var(--r-lg);z-index:10;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
+          <span style="font-size:13px;color:var(--text-muted)">🔒 ต้องปลดล็อคก่อนแก้ไข</span>
+          <button class="btn btn-ghost btn-sm" onclick="promptMixUnlock()">ใส่ Passkey</button>
+        </div>
+        <div id="mix-settings"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -341,8 +367,9 @@
         ยังไม่มีเบอร์ใน pool — กด "Import Excel" หรือ "+ เพิ่มเบอร์"
       </div>
     </div>
-    <input type="file" id="csv-input"   accept=".csv"  style="display:none" onchange="handleCSV(event)">
-    <input type="file" id="excel-input" accept=".xlsx,.xls" style="display:none" onchange="handleExcel(event)">
+    <input type="file" id="csv-input"    accept=".csv"  style="display:none" onchange="handleCSV(event)">
+    <input type="file" id="excel-input"  accept=".xlsx,.xls" style="display:none" onchange="handleExcel(event)">
+    <input type="file" id="config-input" accept=".json" style="display:none" onchange="handleConfigImport(event)">
   </div>
 
 </div>
@@ -356,6 +383,7 @@ const SK = {
   nextEmpId:  'ts_nextEmpId',
   nextPhId:   'ts_nextPhId',
   typeConfig: 'ts_typeConfig',
+  rrIndex:    'ts_rrIndex',
 };
 
 // ─── DEFAULTS ───────────────────────────────
@@ -373,7 +401,7 @@ const DEFAULT_EMPLOYEES = [
 ];
 
 const DEFAULT_SETTINGS = {
-  timeSlot:15, weightT3:60, threshA:20, threshB:15,
+  weightT3:60, threshA:20, threshB:15,
   weightA:130, weightB:110, weightC:100, t3floor:20, t3cap:0,
 };
 
@@ -390,10 +418,16 @@ let nextEmpId  = 11;
 let nextPhId   = 1;
 let MIX        = JSON.parse(JSON.stringify(DEFAULT_MIX));
 let saveTimer  = null;
-// typeConfig: [{ type, method:'equal'|'mix', priority }]
-// method 'equal' = แจกเท่ากันทุกคน (ใช้ timeSlot config สำหรับ TIME)
+// typeConfig: [{ type, method:'equal'|'mix'|'skip', priority }]
+// method 'equal' = round-robin จาก pool ทั้งหมด
 // method 'mix'   = แจกตาม Mix% กลุ่ม
-let typeConfig = [];
+let typeConfig    = [];
+let adminUnlocked = false;
+let mixUnlocked   = false;
+// rrIndex: { [type]: startIndex } — rotating start point per type
+let rrIndex       = {};
+// SHA-256 of "666666"
+const ADMIN_HASH  = 'c0938a20fd3e73d0f01c3bcba3c66d80bf97d2b7ef56fcf1abdb17e38f2a44f8';
 
 // ─── LOCALSTORAGE ────────────────────────────
 function loadAll() {
@@ -404,6 +438,7 @@ function loadAll() {
     nextPhId   = parseInt(localStorage.getItem(SK.nextPhId))      || 1;
     MIX        = JSON.parse(localStorage.getItem(SK.mix))         || JSON.parse(JSON.stringify(DEFAULT_MIX));
     typeConfig = JSON.parse(localStorage.getItem(SK.typeConfig))  || [];
+    rrIndex    = JSON.parse(localStorage.getItem(SK.rrIndex))     || {};
     const s    = JSON.parse(localStorage.getItem(SK.settings))    || DEFAULT_SETTINGS;
     applySettings(s);
   } catch(e) { console.warn('localStorage load error', e); }
@@ -411,7 +446,6 @@ function loadAll() {
 
 function applySettings(s) {
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
-  set('timeSlot', s.timeSlot);
   set('weightT3', s.weightT3);
   set('threshA',  s.threshA);
   set('threshB',  s.threshB);
@@ -420,18 +454,18 @@ function applySettings(s) {
   set('weightC',  s.weightC);
   set('t3floor',  s.t3floor);
   set('t3cap',    s.t3cap);
-  document.getElementById('wt3val').textContent  = s.weightT3 + '%';
-  document.getElementById('wt2val').textContent  = (100 - s.weightT3) + '%';
+  document.getElementById('wt3val').textContent     = s.weightT3 + '%';
+  document.getElementById('wt2val').textContent     = (100 - s.weightT3) + '%';
   document.getElementById('t3floorval').textContent = s.t3floor + '%';
   document.getElementById('t3capval').textContent   = s.t3cap === 0 ? 'ไม่ cap' : s.t3cap + '%';
 }
 
 function saveSettings() {
   const s = {
-    timeSlot: getNum('timeSlot'), weightT3: getNum('weightT3'),
-    threshA:  getNum('threshA'),  threshB:  getNum('threshB'),
-    weightA:  getNum('weightA'),  weightB:  getNum('weightB'),
-    weightC:  getNum('weightC'),  t3floor:  getNum('t3floor'),
+    weightT3: getNum('weightT3'),
+    threshA:  getNum('threshA'),  threshB: getNum('threshB'),
+    weightA:  getNum('weightA'),  weightB: getNum('weightB'),
+    weightC:  getNum('weightC'),  t3floor: getNum('t3floor'),
     t3cap:    getNum('t3cap'),
   };
   localStorage.setItem(SK.settings, JSON.stringify(s));
@@ -499,6 +533,125 @@ function resetAll() {
   location.reload();
 }
 
+// ─── PASSKEY (SHA-256) ───────────────────────
+async function hashPassword(pw) {
+  const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function promptAdminUnlock() {
+  const pw = prompt('ใส่ Passkey เพื่อปลดล็อคการแก้ไขเกณฑ์กลุ่ม:');
+  if (!pw) return;
+  const h = await hashPassword(pw);
+  if (h === ADMIN_HASH) {
+    adminUnlocked = true;
+    document.getElementById('group-config-mask').style.display = 'none';
+    document.getElementById('lock-badge').innerHTML = '🔓 ปลดล็อคแล้ว';
+    document.getElementById('lock-badge').style.background = 'var(--accent-light)';
+    document.getElementById('lock-badge').style.color = 'var(--accent-dark)';
+    document.getElementById('btn-lock-again').style.display = '';
+  } else {
+    alert('Passkey ไม่ถูกต้อง');
+  }
+}
+
+function lockAdmin() {
+  adminUnlocked = false;
+  document.getElementById('group-config-mask').style.display = 'flex';
+  document.getElementById('lock-badge').innerHTML = '🔒 ล็อคอยู่';
+  document.getElementById('lock-badge').style.background = 'var(--amber-light)';
+  document.getElementById('lock-badge').style.color = 'var(--amber)';
+  document.getElementById('btn-lock-again').style.display = 'none';
+}
+
+async function promptMixUnlock() {
+  const pw = prompt('ใส่ Passkey เพื่อปลดล็อค Mix สัดส่วนเบอร์:');
+  if (!pw) return;
+  const h = await hashPassword(pw);
+  if (h === ADMIN_HASH) {
+    mixUnlocked = true;
+    document.getElementById('mix-config-mask').style.display = 'none';
+    document.getElementById('mix-lock-badge').innerHTML = '🔓 ปลดล็อคแล้ว';
+    document.getElementById('mix-lock-badge').style.background = 'var(--accent-light)';
+    document.getElementById('mix-lock-badge').style.color = 'var(--accent-dark)';
+    document.getElementById('btn-mix-lock-again').style.display = '';
+  } else {
+    alert('Passkey ไม่ถูกต้อง');
+  }
+}
+
+function lockMix() {
+  mixUnlocked = false;
+  document.getElementById('mix-config-mask').style.display = 'flex';
+  document.getElementById('mix-lock-badge').innerHTML = '🔒 ล็อคอยู่';
+  document.getElementById('mix-lock-badge').style.background = 'var(--amber-light)';
+  document.getElementById('mix-lock-badge').style.color = 'var(--amber)';
+  document.getElementById('btn-mix-lock-again').style.display = 'none';
+}
+
+// ─── CONFIG EXPORT / IMPORT ─────────────────
+function exportConfig() {
+  const config = {
+    version:    1,
+    exportedAt: new Date().toISOString(),
+    settings: {
+      weightT3: getNum('weightT3'),
+      threshA:  getNum('threshA'),  threshB: getNum('threshB'),
+      weightA:  getNum('weightA'),  weightB: getNum('weightB'),
+      weightC:  getNum('weightC'),  t3floor: getNum('t3floor'),
+      t3cap:    getNum('t3cap'),
+    },
+    mix:        JSON.parse(JSON.stringify(MIX)),
+    typeConfig: JSON.parse(JSON.stringify(typeConfig)),
+  };
+  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = 'telesales_config_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+function importConfig() {
+  document.getElementById('config-input').click();
+}
+
+function handleConfigImport(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const cfg = JSON.parse(ev.target.result);
+      if (!cfg.settings || !cfg.mix) {
+        alert('ไฟล์ config ไม่ถูกต้อง'); return;
+      }
+      if (!confirm('Import config จะเขียนทับการตั้งค่าปัจจุบัน (ยกเว้นข้อมูลพนักงานและ pool เบอร์)\nต้องการดำเนินการต่อไหม?')) return;
+
+      // apply settings
+      applySettings(cfg.settings);
+      localStorage.setItem(SK.settings, JSON.stringify(cfg.settings));
+
+      // apply mix
+      MIX = cfg.mix;
+      localStorage.setItem(SK.mix, JSON.stringify(MIX));
+
+      // apply typeConfig ถ้ามี
+      if (cfg.typeConfig) {
+        typeConfig = cfg.typeConfig;
+        localStorage.setItem(SK.typeConfig, JSON.stringify(typeConfig));
+      }
+
+      renderMixSettings();
+      renderEmpSettings();
+      renderTypeConfig();
+      renderDistributeCheck();
+      flashSaved();
+      alert('Import config สำเร็จ');
+    } catch(err) { alert('อ่านไฟล์ไม่ได้: ' + err.message); }
+    e.target.value = '';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
 // ─── NAVIGATION ─────────────────────────────
 function switchPage(p, btn) {
   document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
@@ -531,17 +684,19 @@ function compositeScore(emp) {
 }
 
 // ─── DISTRIBUTION CALC ──────────────────────
-// Capacity is now per-employee (emp.capacity).
-// middle = capacity - owner - timeSlot
-// weight is only used to proportionally distribute "middle pool" across the team.
-// Each employee's middle = their capacity-derived middle, then mix is applied.
+// timeSlot per person = floor(TIME pool pending / employees count)
+function getTimeSlotPerPerson() {
+  const timeCount = phonePool.filter(p => p.type === 'time' && p.status === 'pending').length;
+  return employees.length > 0 ? Math.floor(timeCount / employees.length) : 0;
+}
+
 function calcDistrib(emp) {
-  const ts    = getNum('timeSlot');
-  const floor = getNum('t3floor') / 100;
-  const capPct = getNum('t3cap');
+  const ts       = getTimeSlotPerPerson();
+  const floor    = getNum('t3floor') / 100;
+  const capPct   = getNum('t3cap');
   const capRatio = capPct > 0 ? capPct / 100 : 1;
-  const score = compositeScore(emp);
-  const g     = getGroup(score);
+  const score    = compositeScore(emp);
+  const g        = getGroup(score);
 
   // middle = what's left after owner and time-slot bookings
   const middle = Math.max(0, emp.capacity - emp.owner - ts);
@@ -624,7 +779,7 @@ function renderEmpSettings() {
     const g     = getGroup(score);
     const wt3   = getNum('weightT3');
     const wt2   = 100 - wt3;
-    const middle = Math.max(0, emp.capacity - emp.owner - getNum('timeSlot'));
+    const middle = Math.max(0, emp.capacity - emp.owner - getTimeSlotPerPerson());
     const initials = emp.name.slice(0, 2).toUpperCase();
 
     const div = document.createElement('div');
@@ -679,7 +834,7 @@ function renderEmpSettings() {
           Composite Score = (${emp.t3Close}% × ${wt3}%) + (${emp.t2Conv}% × ${wt2}%) =
           <strong style="color:var(--text);font-family:var(--mono)">${score.toFixed(1)}%</strong>
           &nbsp;→ กลุ่ม ${g}
-          &nbsp;|&nbsp; เบอร์กลาง = ${emp.capacity} − ${emp.owner} (owner) − ${getNum('timeSlot')} (ช่วงเวลา) =
+          &nbsp;|&nbsp; เบอร์กลาง = ${emp.capacity} − ${emp.owner} (owner) − ${getTimeSlotPerPerson()} (TIME ÷ ทีม) =
           <strong style="font-family:var(--mono)">${middle}</strong>
         </div>
       </div>`;
@@ -980,15 +1135,17 @@ function renderTypeConfig() {
   card.style.display = typeConfig.length ? '' : 'none';
   if (!typeConfig.length) return;
 
-  const MIX_TYPES = ['new','t2','t3'];
+  const MIX_TYPES  = ['new','t2','t3'];
   const typeColors = { time:'#FAEEDA', new:'#EEEDFE', t2:'#E6F1FB', t3:'#E1F5EE' };
   const typeText   = { time:'#633806', new:'#3C3489', t2:'#0C447C', t3:'#085041' };
 
   list.innerHTML = typeConfig.map((c, i) => {
-    const bg   = typeColors[c.type] || '#F0EFE9';
-    const col  = typeText[c.type]   || '#444441';
-    const isMixType = MIX_TYPES.includes(c.type);
+    const bg      = typeColors[c.type] || '#F0EFE9';
+    const col     = typeText[c.type]   || '#444441';
+    const isMix   = MIX_TYPES.includes(c.type);
     const isFirst = i === 0, isLast = i === typeConfig.length - 1;
+    const poolCnt = phonePool.filter(p => p.type === c.type && p.status === 'pending').length;
+    const perPerson = employees.length > 0 ? Math.floor(poolCnt / employees.length) : 0;
     return `
     <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:0.5px solid var(--border);border-radius:var(--r);margin-bottom:6px;background:var(--surface)">
       <div style="display:flex;flex-direction:column;gap:2px">
@@ -1000,20 +1157,13 @@ function renderTypeConfig() {
       <div style="flex:1;display:flex;align-items:center;gap:8px">
         <label style="margin:0;font-size:12px;color:var(--text-muted)">วิธีแจก:</label>
         <select style="width:auto;padding:4px 8px;font-size:12px" onchange="updateTypeMethod(${i},this.value)">
-          <option value="equal" ${c.method==='equal'?'selected':''}>เท่ากันทุกคน</option>
-          ${isMixType ? `<option value="mix" ${c.method==='mix'?'selected':''}>ตาม Mix% กลุ่ม</option>` : ''}
+          <option value="equal" ${c.method==='equal'?'selected':''}>Round-robin (กระจายทั้ง pool)</option>
+          ${isMix ? `<option value="mix" ${c.method==='mix'?'selected':''}>ตาม Mix% กลุ่ม</option>` : ''}
           <option value="skip" ${c.method==='skip'?'selected':''}>ข้าม (ไม่แจก)</option>
         </select>
-        ${c.method==='equal' ? `
-        <label style="margin:0;font-size:12px;color:var(--text-muted)">จำนวน/คน:</label>
-        <select style="width:auto;padding:4px 8px;font-size:12px" onchange="updateTypeCount(${i},this.value)">
-          <option value="timeslot" ${(!c.countOverride)?'selected':''}>ดึงจาก config (${getNum('timeSlot')})</option>
-          <option value="custom"   ${c.countOverride?'selected':''}>กำหนดเอง</option>
-        </select>
-        ${c.countOverride ? `<input type="number" value="${c.countOverride}" min="0" style="width:70px;padding:4px 8px;font-size:12px" onchange="updateTypeCustomCount(${i},+this.value)">` : ''}
-        ` : ''}
+        ${c.method==='equal' ? `<span style="font-size:11px;color:var(--text-faint)">≈ ${perPerson} ใบ/คน</span>` : ''}
       </div>
-      <span style="font-size:11px;color:var(--text-faint)">${phonePool.filter(p=>p.type===c.type&&p.status==='pending').length} ใน pool</span>
+      <span style="font-size:11px;color:var(--text-faint)">${poolCnt} ใน pool</span>
     </div>`;
   }).join('');
 }
@@ -1028,19 +1178,7 @@ function moveType(idx, dir) {
 
 function updateTypeMethod(idx, val) {
   typeConfig[idx].method = val;
-  if (val !== 'equal') delete typeConfig[idx].countOverride;
   saveTypeConfig(); renderTypeConfig(); renderDistributeCheck();
-}
-
-function updateTypeCount(idx, val) {
-  if (val === 'custom') typeConfig[idx].countOverride = getNum('timeSlot');
-  else delete typeConfig[idx].countOverride;
-  saveTypeConfig(); renderTypeConfig();
-}
-
-function updateTypeCustomCount(idx, val) {
-  typeConfig[idx].countOverride = val;
-  saveTypeConfig(); renderDistributeCheck();
 }
 
 // ─── DISTRIBUTE & EXPORT EXCEL ───────────────
@@ -1074,14 +1212,26 @@ function distributeAndExport() {
     const typePool = poolByType[c.type] || [];
 
     if (c.method === 'equal') {
-      // เท่ากันทุกคน
-      const perPerson = c.countOverride != null ? c.countOverride : getNum('timeSlot');
-      plan.forEach(p => {
-        const take = typePool.splice(0, perPerson);
+      // shuffle ก่อน
+      for (let i = typePool.length-1; i > 0; i--) {
+        const j = Math.floor(Math.random()*(i+1));
+        [typePool[i],typePool[j]] = [typePool[j],typePool[i]];
+      }
+      // rotating start — เริ่มจาก index ที่บันทึกไว้จากรอบก่อน
+      const startIdx = (rrIndex[c.type] || 0) % plan.length;
+      let rr = 0;
+      while (typePool.length > 0) {
+        const ph  = typePool.shift();
+        const idx = (startIdx + rr) % plan.length;
+        const p   = plan[idx];
         if (!p.assigned[c.type]) p.assigned[c.type] = [];
-        p.assigned[c.type].push(...take);
-        take.forEach(ph => { ph.assignedTo = p.emp.id; ph.status = 'assigned'; });
-      });
+        p.assigned[c.type].push(ph);
+        ph.assignedTo = p.emp.id;
+        ph.status     = 'assigned';
+        rr++;
+      }
+      // บันทึก index ถัดไปสำหรับรอบหน้า
+      rrIndex[c.type] = (startIdx + rr) % plan.length;
     } else {
       // mix — แจกตาม calcDistrib
       plan.forEach((p, i) => {
@@ -1095,7 +1245,9 @@ function distributeAndExport() {
     }
   });
 
-  savePhones(); renderPhoneTable();
+  savePhones();
+  localStorage.setItem(SK.rrIndex, JSON.stringify(rrIndex));
+  renderPhoneTable();
 
   // Export Excel
   const wb   = XLSX.utils.book_new();
@@ -1146,19 +1298,20 @@ function renderDistributeCheck() {
   });
 
   const rows = typeConfig.filter(c => c.method !== 'skip').map(c => {
-    const have = pendingCounts[c.type] || 0;
-    let need = 0;
+    const have      = pendingCounts[c.type] || 0;
+    const perPerson = employees.length > 0 ? Math.floor(have / employees.length) : 0;
+    let need = 0; let methodLabel = '';
     if (c.method === 'equal') {
-      const perPerson = c.countOverride != null ? c.countOverride : getNum('timeSlot');
-      need = perPerson * employees.length;
+      need        = have;
+      methodLabel = `Round-robin ≈ ${perPerson} ใบ/คน`;
     } else {
+      methodLabel = 'Mix% กลุ่ม';
       need = employees.reduce((s, emp) => {
         const d = calcDistrib(emp);
-        return s + (c.type==='new'?d.newN:c.type==='t2'?d.t2:c.type==='t3'?d.t3:0);
+        return s + (c.type==='new'?d.newN : c.type==='t2'?d.t2 : c.type==='t3'?d.t3 : 0);
       }, 0);
     }
-    const ok = have >= need;
-    const methodLabel = c.method==='equal' ? 'เท่ากันทุกคน' : 'Mix% กลุ่ม';
+    const ok = c.method === 'equal' ? true : have >= need;
     return `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px;border-bottom:0.5px solid var(--border)">
       <span style="display:flex;align-items:center;gap:8px">
@@ -1167,19 +1320,22 @@ function renderDistributeCheck() {
         <span style="font-size:11px;color:var(--text-faint)">priority ${c.priority}</span>
       </span>
       <span>
-        ต้องการ <strong>${need}</strong> / มี <strong>${have}</strong>
-        ${ok
-          ? '<span style="color:var(--accent-dark);margin-left:6px">✓</span>'
-          : `<span style="color:var(--red);margin-left:6px">⚠ ขาด ${need-have}</span>`}
+        ${c.method==='equal'
+          ? `มีใน pool <strong>${have}</strong> ใบ <span style="color:var(--accent-dark);margin-left:6px">✓ แจกทั้งหมด</span>`
+          : `ต้องการ <strong>${need}</strong> / มี <strong>${have}</strong>
+             ${ok
+               ? '<span style="color:var(--accent-dark);margin-left:6px">✓</span>'
+               : `<span style="color:var(--red);margin-left:6px">⚠ ขาด ${need-have}</span>`}`}
       </span>
     </div>`;
   }).join('');
 
-  const hasShortfall = typeConfig.filter(c=>c.method!=='skip').some(c => {
-    const have = pendingCounts[c.type]||0;
-    const perPerson = c.countOverride!=null?c.countOverride:getNum('timeSlot');
-    const need = c.method==='equal' ? perPerson*employees.length
-      : employees.reduce((s,emp)=>{const d=calcDistrib(emp);return s+(c.type==='new'?d.newN:c.type==='t2'?d.t2:c.type==='t3'?d.t3:0);},0);
+  const hasShortfall = typeConfig.filter(c => c.method==='mix').some(c => {
+    const have = pendingCounts[c.type] || 0;
+    const need = employees.reduce((s,emp) => {
+      const d = calcDistrib(emp);
+      return s + (c.type==='new'?d.newN:c.type==='t2'?d.t2:c.type==='t3'?d.t3:0);
+    }, 0);
     return have < need;
   });
 
