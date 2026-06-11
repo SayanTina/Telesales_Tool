@@ -176,7 +176,7 @@
   .type-fail { background: var(--amber-dim);  color: var(--amber); }
 
   /* ── TREND CHART ── */
-  .trend-canvas { width: 100%; height: 140px; }
+  .trend-canvas { width: 100%; height: 140px; display: block; }
 
   /* ── DETAIL TABLE ── */
   .detail-wrap { overflow-x: auto; max-height: 400px; overflow-y: auto; }
@@ -305,6 +305,7 @@
 <nav class="topbar">
   <div class="topbar-left">
     <span class="brand"><span class="brand-dot"></span>Call Dashboard</span>
+    <span style="font-size:11px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);color:var(--text-faint);padding:2px 8px;border-radius:20px">v1.0.0</span>
     <span id="last-sync" style="font-size:11px;color:var(--text-faint)"></span>
   </div>
   <div style="display:flex;gap:8px">
@@ -390,7 +391,9 @@
   <div class="grid-2">
     <div class="card">
       <div class="card-title">สายต่อวัน <span id="trend-range"></span></div>
-      <canvas id="trend-chart" class="trend-canvas"></canvas>
+      <div style="position:relative;height:140px;width:100%">
+        <canvas id="trend-chart"></canvas>
+      </div>
     </div>
     <div class="card">
       <div class="card-title">สัดส่วนประเภทสาย</div>
@@ -657,60 +660,35 @@ function renderStats() {
   setText('stat-duration-sub',`เฉลี่ย ${fmtDurShort(avgDur)} / สาย`);
 }
 
-// ─── TREND CHART PLUGIN (defined once) ───────
-const totalLabelPlugin = {
-  id: 'totalLabel',
-  afterDatasetsDraw(chart) {
-    if (chart.canvas.id !== 'trend-chart') return;
-    const c       = chart.ctx;
-    const totals  = chart._totalLabels || [];
-    const lastIdx = chart.data.datasets.length - 1;
-    const lastMeta = chart.getDatasetMeta(lastIdx);
-    lastMeta.data.forEach((bar, i) => {
-      const total = totals[i];
-      if (!total) return;
-      c.save();
-      c.font = '600 10px IBM Plex Mono, monospace';
-      c.fillStyle = 'rgba(255,255,255,0.7)';
-      c.textAlign = 'center';
-      c.textBaseline = 'bottom';
-      c.fillText(total, bar.x, bar.y - 2);
-      c.restore();
-    });
-  }
-};
-
 // ─── TREND CHART ─────────────────────────────
 function renderTrend() {
   const byDay = {};
   filtered.forEach(r => {
     const d = fmtDate(r.date);
     if (!byDay[d]) byDay[d] = { outOk:0, outFail:0, inc:0, miss:0 };
-    if (r.callType==='OUTGOING_CONNECTED')   byDay[d].outOk++;
-    else if (r.callType==='OUTGOING_FAILED') byDay[d].outFail++;
-    else if (r.callType==='INCOMING')        byDay[d].inc++;
-    else if (r.callType==='MISSED')          byDay[d].miss++;
+    if      (r.callType==='OUTGOING_CONNECTED')  byDay[d].outOk++;
+    else if (r.callType==='OUTGOING_FAILED')      byDay[d].outFail++;
+    else if (r.callType==='INCOMING')             byDay[d].inc++;
+    else if (r.callType==='MISSED')               byDay[d].miss++;
   });
+
   const days   = Object.keys(byDay).sort();
   const labels = days.map(d => d.slice(5));
-
-  // คำนวณ % ต่อวัน
-  const toPercent = (key) => days.map(d => {
-    const total = byDay[d].outOk + byDay[d].outFail + byDay[d].inc + byDay[d].miss;
-    return total > 0 ? Math.round(byDay[d][key] / total * 100) : 0;
-  });
-
-  // เก็บ total จริงสำหรับแสดงใน tooltip
   const totals = days.map(d => byDay[d].outOk + byDay[d].outFail + byDay[d].inc + byDay[d].miss);
 
-  document.getElementById('trend-range').textContent = days.length ? `${days[0]} – ${days[days.length-1]}` : '';
+  const toPercent = key => days.map(d => {
+    const t = totals[days.indexOf(d)];
+    return t > 0 ? Math.round(byDay[d][key] / t * 100) : 0;
+  });
 
-  if (trendChart) trendChart.destroy();
-  const ctx = document.getElementById('trend-chart').getContext('2d');
+  document.getElementById('trend-range').textContent =
+    days.length ? `${days[0]} – ${days[days.length-1]}` : '';
 
-  trendChart = new Chart(ctx, {
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
+
+  const canvas = document.getElementById('trend-chart');
+  trendChart = new Chart(canvas.getContext('2d'), {
     type: 'bar',
-    plugins: [totalLabelPlugin],
     data: {
       labels,
       datasets: [
@@ -721,27 +699,33 @@ function renderTrend() {
       ]
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive:        true,
+      maintainAspectRatio: false,
+      animation:         false,
       plugins: {
-        legend: { labels:{ color:'#7A7F96', font:{size:11}, boxWidth:10, padding:10 } },
+        legend: { labels: { color:'#7A7F96', font:{size:11}, boxWidth:10, padding:10 } },
         tooltip: {
           callbacks: {
-            label: item => ` ${item.dataset.label}: ${item.parsed.y}%`,
+            label:  item  => ` ${item.dataset.label}: ${item.parsed.y}%`,
             footer: items => `รวม ${totals[items[0].dataIndex]} สาย`,
           }
         }
       },
       scales: {
-        x: { stacked:true, ticks:{color:'#454A60',font:{size:10}}, grid:{color:'rgba(255,255,255,0.04)'} },
-        y: {
-          stacked:true, max:100,
-          ticks:{ color:'#454A60', font:{size:10}, callback: v => v+'%' },
-          grid:{ color:'rgba(255,255,255,0.04)' }
+        x: {
+          stacked: true,
+          ticks: { color:'#454A60', font:{size:10} },
+          grid:  { color:'rgba(255,255,255,0.04)' },
         },
-      }
-    }
+        y: {
+          stacked: true,
+          min: 0, max: 100,
+          ticks: { color:'#454A60', font:{size:10}, callback: v => v + '%' },
+          grid:  { color:'rgba(255,255,255,0.04)' },
+        },
+      },
+    },
   });
-  trendChart._totalLabels = totals;
 }
 
 // ─── TYPE DOUGHNUT ────────────────────────────
