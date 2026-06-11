@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Call Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:           #0F1117;
+    --surface:      #181B24;
+    --surface2:     #1E2230;
+    --surface3:     #252A3A;
+    --border:       rgba(255,255,255,0.07);
+    --border2:      rgba(255,255,255,0.12);
+    --text:         #E8EAF0;
+    --text-muted:   #7A7F96;
+    --text-faint:   #454A60;
+    --green:        #3ECFA0;
+    --green-dim:    rgba(62,207,160,0.12);
+    --blue:         #5B9BF8;
+    --blue-dim:     rgba(91,155,248,0.12);
+    --amber:        #F5A623;
+    --amber-dim:    rgba(245,166,35,0.12);
+    --red:          #F5605A;
+    --red-dim:      rgba(245,96,90,0.12);
+    --purple:       #A78BFA;
+    --purple-dim:   rgba(167,139,250,0.12);
+    --font:         'IBM Plex Sans Thai', system-ui, sans-serif;
+    --mono:         'IBM Plex Mono', monospace;
+    --r:            8px;
+    --r-lg:         14px;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── LAYOUT ── */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(15,17,23,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    height: 56px;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .brand { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
+  .brand-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 8px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .sync-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    color: var(--text-muted); border-radius: var(--r);
+    padding: 6px 12px; font-size: 12px; cursor: pointer;
+    font-family: var(--font); transition: all 0.15s;
+  }
+  .sync-btn:hover { color: var(--text); border-color: var(--green); }
+  .sync-btn.loading { pointer-events: none; opacity: 0.6; }
+
+  .main { padding: 24px; max-width: 1280px; margin: 0 auto; }
+
+  /* ── FILTERS ── */
+  .filters {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+  }
+  .filter-group { display: flex; flex-direction: column; gap: 4px; }
+  .filter-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); }
+  .filter-input {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); border-radius: var(--r);
+    padding: 7px 10px; font-size: 13px; font-family: var(--font);
+    transition: border-color 0.15s; min-width: 140px;
+  }
+  .filter-input:focus { outline: none; border-color: var(--green); }
+  .filter-input option { background: var(--surface2); }
+  .btn-reset {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text-muted); border-radius: var(--r);
+    padding: 7px 14px; font-size: 12px; cursor: pointer;
+    font-family: var(--font); transition: all 0.15s; align-self: flex-end;
+  }
+  .btn-reset:hover { color: var(--text); border-color: var(--border2); }
+
+  /* ── STAT CARDS ── */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r-lg); padding: 16px 18px;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.blue::before  { background: var(--blue); }
+  .stat-card.amber::before { background: var(--amber); }
+  .stat-card.red::before   { background: var(--red); }
+  .stat-card.purple::before{ background: var(--purple); }
+
+  .stat-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 600; line-height: 1.1; font-family: var(--mono); }
+  .stat-value.green  { color: var(--green); }
+  .stat-value.blue   { color: var(--blue); }
+  .stat-value.amber  { color: var(--amber); }
+  .stat-value.red    { color: var(--red); }
+  .stat-value.purple { color: var(--purple); }
+  .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* ── GRID LAYOUT ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r-lg); padding: 20px;
+  }
+  .card-title {
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title span { font-size: 11px; color: var(--text-faint); font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+  /* ── BAR CHART ── */
+  .bar-chart { display: flex; flex-direction: column; gap: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-name { font-size: 12px; color: var(--text-muted); min-width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+  .bar-track { flex: 1; background: var(--surface3); border-radius: 3px; height: 22px; position: relative; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; display: flex; align-items: center; padding: 0 8px; transition: width 0.5s cubic-bezier(.4,0,.2,1); }
+  .bar-val { font-size: 11px; font-family: var(--mono); font-weight: 500; color: rgba(255,255,255,0.8); white-space: nowrap; }
+  .bar-sub { font-size: 11px; color: var(--text-faint); min-width: 80px; text-align: right; font-family: var(--mono); }
+
+  /* ── STAFF TABLE ── */
+  .staff-table { width: 100%; border-collapse: collapse; }
+  .staff-table th {
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-faint); text-align: left; padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .staff-table th.right { text-align: right; }
+  .staff-table td { padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+  .staff-table tr:last-child td { border-bottom: none; }
+  .staff-table tr:hover td { background: var(--surface2); }
+  .staff-table td.mono { font-family: var(--mono); font-size: 12px; }
+  .staff-table td.right { text-align: right; }
+
+  .mini-bar { display: flex; height: 4px; border-radius: 2px; overflow: hidden; gap: 1px; min-width: 60px; }
+  .mini-seg { height: 100%; border-radius: 2px; }
+
+  /* ── TYPE BADGE ── */
+  .type-badge {
+    display: inline-flex; align-items: center; padding: 2px 8px;
+    border-radius: 20px; font-size: 11px; font-weight: 600;
+  }
+  .type-out  { background: var(--blue-dim);   color: var(--blue); }
+  .type-in   { background: var(--green-dim);  color: var(--green); }
+  .type-miss { background: var(--red-dim);    color: var(--red); }
+  .type-fail { background: var(--amber-dim);  color: var(--amber); }
+
+  /* ── TREND CHART ── */
+  .trend-canvas { width: 100%; height: 140px; }
+
+  /* ── DETAIL TABLE ── */
+  .detail-wrap { overflow-x: auto; max-height: 400px; overflow-y: auto; }
+  .detail-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+  .detail-table th {
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-faint); text-align: left; padding: 8px 10px;
+    background: var(--surface2);
+    position: sticky; top: 0; z-index: 2;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 12px; vertical-align: middle; }
+  .detail-table tr:last-child td { border-bottom: none; }
+  .detail-table tr:hover td { background: var(--surface2); }
+
+  .link-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--blue); font-size: 11px; text-decoration: none;
+    background: var(--blue-dim); padding: 2px 8px; border-radius: 20px;
+    transition: opacity 0.15s;
+  }
+  .link-btn:hover { opacity: 0.75; }
+
+  /* ── EMPTY / LOADING ── */
+  .empty { text-align: center; padding: 48px; color: var(--text-faint); font-size: 13px; }
+  .loading-overlay {
+    position: fixed; inset: 0; background: rgba(15,17,23,0.7); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center; z-index: 200;
+    flex-direction: column; gap: 12px;
+  }
+  .spinner {
+    width: 32px; height: 32px; border: 2px solid var(--border2);
+    border-top-color: var(--green); border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13px; color: var(--text-muted); }
+
+  /* ── CONFIG MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center; z-index: 300;
+  }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--r-lg); padding: 24px; width: 480px; max-width: 90vw;
+  }
+  .modal h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+  .modal-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block; }
+  .modal-input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); border-radius: var(--r); padding: 8px 10px;
+    font-size: 13px; font-family: var(--mono); margin-bottom: 12px;
+  }
+  .modal-input:focus { outline: none; border-color: var(--green); }
+  .modal-hint { font-size: 11px; color: var(--text-faint); margin-bottom: 16px; line-height: 1.6; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .btn-save {
+    background: var(--green); color: #0F1117; border: none;
+    border-radius: var(--r); padding: 8px 18px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: var(--font);
+  }
+  .btn-cancel {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text-muted); border-radius: var(--r);
+    padding: 8px 14px; font-size: 13px; cursor: pointer; font-family: var(--font);
+  }
+
+  /* ── STAFF DETAIL PANEL ── */
+  .staff-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 2px 10px; font-size: 12px;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .staff-pill:hover, .staff-pill.active { border-color: var(--green); color: var(--green); }
+
+  .error-box {
+    background: var(--red-dim); border: 1px solid var(--red);
+    border-radius: var(--r); padding: 12px 16px; font-size: 13px; color: var(--red);
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .main { padding: 16px; }
+    .topbar { padding: 0 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading" class="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">กำลังโหลดข้อมูล...</div>
+</div>
+
+<!-- Config Modal -->
+<div id="config-modal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h2>⚙ ตั้งค่า Google Sheet</h2>
+    <label class="modal-label">Call Log Sheet ID</label>
+    <input type="text" id="input-log-id" class="modal-input" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
+    <label class="modal-label">Staff Sheet ID (อาจเป็น Sheet เดียวกัน)</label>
+    <input type="text" id="input-staff-id" class="modal-input" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
+    <label class="modal-label">Call Log Sheet Name (tab)</label>
+    <input type="text" id="input-log-sheet" class="modal-input" placeholder="call_logs" value="call_logs">
+    <label class="modal-label">Staff Sheet Name (tab)</label>
+    <input type="text" id="input-staff-sheet" class="modal-input" placeholder="staff" value="staff">
+    <div class="modal-hint">
+      วิธีหา Sheet ID: เปิด Google Sheet → ดู URL<br>
+      <code style="font-family:var(--mono);font-size:11px;color:var(--green)">
+        docs.google.com/spreadsheets/d/<strong>[SHEET_ID]</strong>/edit
+      </code><br><br>
+      Sheet ต้องตั้งเป็น "Anyone with the link can view"
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeConfig()">ยกเลิก</button>
+      <button class="btn-save" onclick="saveConfig()">บันทึกและโหลด</button>
+    </div>
+  </div>
+</div>
+
+<!-- Topbar -->
+<nav class="topbar">
+  <div class="topbar-left">
+    <span class="brand"><span class="brand-dot"></span>Call Dashboard</span>
+    <span id="last-sync" style="font-size:11px;color:var(--text-faint)"></span>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="sync-btn" onclick="loadData()" id="sync-btn">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+      Sync
+    </button>
+    <button class="sync-btn" onclick="openConfig()">⚙ Config</button>
+  </div>
+</nav>
+
+<!-- Main -->
+<div class="main">
+  <div id="error-box" style="display:none"></div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-group">
+      <div class="filter-label">วันที่เริ่มต้น</div>
+      <input type="date" id="filter-date-from" class="filter-input" onchange="applyFilters()">
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">วันที่สิ้นสุด</div>
+      <input type="date" id="filter-date-to" class="filter-input" onchange="applyFilters()">
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">พนักงาน</div>
+      <select id="filter-staff" class="filter-input" onchange="applyFilters()">
+        <option value="">ทั้งหมด</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">ประเภทสาย</div>
+      <select id="filter-type" class="filter-input" onchange="applyFilters()">
+        <option value="">ทั้งหมด</option>
+        <option value="OUTGOING_CONNECTED">โทรออกติด</option>
+        <option value="OUTGOING_FAILED">โทรออกไม่ติด</option>
+        <option value="INCOMING">รับสาย</option>
+        <option value="MISSED">ไม่รับสาย (MISSED)</option>
+      </select>
+    </div>
+    <button class="btn-reset" onclick="resetFilters()">รีเซ็ต</button>
+    <div style="margin-left:auto;font-size:12px;color:var(--text-faint);align-self:flex-end;padding-bottom:2px">
+      แสดง <strong id="row-count" style="color:var(--text)">0</strong> รายการ
+    </div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stat-grid" id="stat-grid">
+    <div class="stat-card blue">
+      <div class="stat-label">สายทั้งหมด</div>
+      <div class="stat-value blue" id="stat-total">—</div>
+      <div class="stat-sub" id="stat-total-sub"></div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">โทรออกติด</div>
+      <div class="stat-value green" id="stat-out-ok">—</div>
+      <div class="stat-sub" id="stat-out-ok-sub"></div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-label">โทรออกไม่ติด</div>
+      <div class="stat-value amber" id="stat-out-fail">—</div>
+      <div class="stat-sub" id="stat-out-fail-sub"></div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-label">รับสาย</div>
+      <div class="stat-value purple" id="stat-in">—</div>
+      <div class="stat-sub" id="stat-in-sub"></div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">MISSED</div>
+      <div class="stat-value red" id="stat-miss">—</div>
+      <div class="stat-sub" id="stat-miss-sub"></div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">เวลาโทรรวม</div>
+      <div class="stat-value green" id="stat-duration">—</div>
+      <div class="stat-sub" id="stat-duration-sub"></div>
+    </div>
+  </div>
+
+  <!-- Trend + Type breakdown -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">สายต่อวัน <span id="trend-range"></span></div>
+      <canvas id="trend-chart" class="trend-canvas"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">สัดส่วนประเภทสาย</div>
+      <canvas id="type-chart" style="width:100%;height:140px"></canvas>
+    </div>
+  </div>
+
+  <!-- Staff performance -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title">Performance รายคน <span>เรียงตามสายที่โทรออกติด</span></div>
+    <div id="staff-bars"></div>
+  </div>
+
+  <!-- Staff detail table -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title">ตารางสรุปรายคน</div>
+    <div class="detail-wrap">
+      <table class="staff-table" id="staff-summary-table">
+        <thead>
+          <tr>
+            <th>พนักงาน</th>
+            <th class="right">โทรออกติด</th>
+            <th class="right">โทรออกไม่ติด</th>
+            <th class="right">รับสาย</th>
+            <th class="right">MISSED</th>
+            <th class="right">เวลารวม</th>
+            <th class="right">เฉลี่ย/สาย</th>
+            <th>Mix</th>
+          </tr>
+        </thead>
+        <tbody id="staff-summary-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Call log detail -->
+  <div class="card">
+    <div class="card-title">
+      รายการโทรทั้งหมด
+      <span id="detail-staff-label"></span>
+    </div>
+    <div class="detail-wrap">
+      <table class="detail-table">
+        <thead>
+          <tr>
+            <th>วันที่ / เวลา</th>
+            <th>พนักงาน</th>
+            <th>เบอร์</th>
+            <th>ประเภท</th>
+            <th>ระยะเวลา</th>
+            <th>บันทึก</th>
+          </tr>
+        </thead>
+        <tbody id="detail-body"></tbody>
+      </table>
+    </div>
+    <div id="detail-empty" class="empty" style="display:none">ไม่มีข้อมูล</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ─── CONFIG ──────────────────────────────────
+const LS = {
+  logId:      'cd_log_sheet_id',
+  staffId:    'cd_staff_sheet_id',
+  logSheet:   'cd_log_sheet_name',
+  staffSheet: 'cd_staff_sheet_name',
+};
+
+// !! แก้ค่าเหล่านี้ หรือกด ⚙ Config ใน UI !!
+const DEFAULT_CFG = {
+  logId:      'YOUR_CALL_LOG_SHEET_ID',
+  staffId:    'YOUR_STAFF_SHEET_ID',
+  logSheet:   'call_logs',
+  staffSheet: 'staff',
+};
+
+function getCfg() {
+  return {
+    logId:      localStorage.getItem(LS.logId)      || DEFAULT_CFG.logId,
+    staffId:    localStorage.getItem(LS.staffId)    || DEFAULT_CFG.staffId,
+    logSheet:   localStorage.getItem(LS.logSheet)   || DEFAULT_CFG.logSheet,
+    staffSheet: localStorage.getItem(LS.staffSheet) || DEFAULT_CFG.staffSheet,
+  };
+}
+
+// ─── STATE ───────────────────────────────────
+let rawLogs    = [];   // all call log rows
+let staffMap   = {};   // callId → name
+let filtered   = [];   // after filters applied
+let trendChart = null;
+let typeChart  = null;
+
+// ─── GOOGLE SHEETS FETCH ─────────────────────
+function sheetUrl(sheetId, sheetName) {
+  const enc = encodeURIComponent(sheetName);
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${enc}`;
+}
+
+async function fetchCSV(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.text();
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  return lines.slice(1).map(line => {
+    // handle quoted fields
+    const cols = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    cols.push(cur.trim());
+    return cols;
+  }).filter(r => r.some(c => c));
+}
+
+// ─── LOAD DATA ────────────────────────────────
+async function loadData() {
+  const btn = document.getElementById('sync-btn');
+  btn.classList.add('loading');
+  btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:1.5px"></span> Loading...';
+  showError(null);
+
+  try {
+    const cfg = getCfg();
+    if (cfg.logId === DEFAULT_CFG.logId) {
+      hideLoading(); openConfig(); return;
+    }
+
+    // fetch staff map
+    try {
+      const staffCSV = await fetchCSV(sheetUrl(cfg.staffId, cfg.staffSheet));
+      const staffRows = parseCSV(staffCSV);
+      staffMap = {};
+      staffRows.forEach(r => {
+        if (r[0]) staffMap[String(r[0]).trim()] = String(r[1]||r[0]).trim();
+      });
+    } catch(e) { staffMap = {}; }
+
+    // fetch call logs
+    const logCSV  = await fetchCSV(sheetUrl(cfg.logId, cfg.logSheet));
+    const logRows = parseCSV(logCSV);
+
+    rawLogs = logRows.map(r => {
+      const callId   = String(r[5]||'').trim();
+      const type     = String(r[3]||'').trim().toUpperCase();
+      const dur      = parseInt(r[2]) || 0;
+      const staffName = staffMap[callId] || callId || 'ไม่ระบุ';
+      let callType;
+      if (type === 'MISSED')   callType = 'MISSED';
+      else if (type === 'INCOMING') callType = dur > 0 ? 'INCOMING' : 'MISSED';
+      else if (type === 'OUTGOING') callType = dur > 0 ? 'OUTGOING_CONNECTED' : 'OUTGOING_FAILED';
+      else callType = type;
+      return {
+        date:     new Date(r[0]),
+        dateStr:  r[0]||'',
+        phone:    String(r[1]||'').trim(),
+        duration: dur,
+        type:     type,
+        callType,
+        weblink:  String(r[4]||'').trim(),
+        callId,
+        staff:    staffName,
+      };
+    }).filter(r => !isNaN(r.date));
+
+    rawLogs.sort((a,b) => b.date - a.date);
+
+    // populate staff filter
+    const staffSel = document.getElementById('filter-staff');
+    const staffNames = [...new Set(rawLogs.map(r => r.staff))].sort();
+    staffSel.innerHTML = '<option value="">ทั้งหมด</option>' +
+      staffNames.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+
+    // set default date range (last 30 days)
+    const today = new Date();
+    const ago30 = new Date(today); ago30.setDate(ago30.getDate() - 30);
+    if (!document.getElementById('filter-date-from').value) {
+      document.getElementById('filter-date-from').value = fmtDate(ago30);
+      document.getElementById('filter-date-to').value   = fmtDate(today);
+    }
+
+    document.getElementById('last-sync').textContent =
+      'อัปเดตล่าสุด ' + new Date().toLocaleTimeString('th-TH');
+
+    applyFilters();
+  } catch(err) {
+    showError('โหลดข้อมูลไม่สำเร็จ: ' + err.message + ' — กรุณาตรวจสอบ Sheet ID และสิทธิ์การเข้าถึง');
+    hideLoading();
+  }
+
+  hideLoading();
+  btn.classList.remove('loading');
+  btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Sync';
+}
+
+// ─── FILTERS ─────────────────────────────────
+function applyFilters() {
+  const fromVal  = document.getElementById('filter-date-from').value;
+  const toVal    = document.getElementById('filter-date-to').value;
+  const staff    = document.getElementById('filter-staff').value;
+  const typeF    = document.getElementById('filter-type').value;
+  const from     = fromVal ? new Date(fromVal) : null;
+  const to       = toVal   ? new Date(toVal + 'T23:59:59') : null;
+
+  filtered = rawLogs.filter(r => {
+    if (from && r.date < from) return false;
+    if (to   && r.date > to)   return false;
+    if (staff && r.staff !== staff) return false;
+    if (typeF && r.callType !== typeF) return false;
+    return true;
+  });
+
+  document.getElementById('row-count').textContent = filtered.length.toLocaleString();
+  renderAll();
+}
+
+function resetFilters() {
+  document.getElementById('filter-date-from').value = '';
+  document.getElementById('filter-date-to').value   = '';
+  document.getElementById('filter-staff').value     = '';
+  document.getElementById('filter-type').value      = '';
+  applyFilters();
+}
+
+// ─── RENDER ALL ──────────────────────────────
+function renderAll() {
+  renderStats();
+  renderTrend();
+  renderTypeChart();
+  renderStaffBars();
+  renderStaffTable();
+  renderDetailTable(filtered);
+}
+
+// ─── STATS ───────────────────────────────────
+function renderStats() {
+  const total     = filtered.length;
+  const outOk     = filtered.filter(r => r.callType === 'OUTGOING_CONNECTED').length;
+  const outFail   = filtered.filter(r => r.callType === 'OUTGOING_FAILED').length;
+  const incoming  = filtered.filter(r => r.callType === 'INCOMING').length;
+  const missed    = filtered.filter(r => r.callType === 'MISSED').length;
+  const totalDur  = filtered.reduce((s,r) => s+r.duration, 0);
+  const avgDur    = outOk + incoming > 0 ? Math.round(totalDur / (outOk + incoming)) : 0;
+
+  setText('stat-total',       total.toLocaleString());
+  setText('stat-total-sub',   `avg ${avgDur}s / สาย`);
+  setText('stat-out-ok',      outOk.toLocaleString());
+  setText('stat-out-ok-sub',  pct(outOk, total));
+  setText('stat-out-fail',    outFail.toLocaleString());
+  setText('stat-out-fail-sub',pct(outFail, total));
+  setText('stat-in',          incoming.toLocaleString());
+  setText('stat-in-sub',      pct(incoming, total));
+  setText('stat-miss',        missed.toLocaleString());
+  setText('stat-miss-sub',    pct(missed, total));
+  setText('stat-duration',    fmtDurShort(totalDur));
+  setText('stat-duration-sub',`เฉลี่ย ${fmtDurShort(avgDur)} / สาย`);
+}
+
+// ─── TREND CHART ─────────────────────────────
+function renderTrend() {
+  const byDay = {};
+  filtered.forEach(r => {
+    const d = fmtDate(r.date);
+    if (!byDay[d]) byDay[d] = { out:0, inc:0, miss:0 };
+    if (r.callType==='OUTGOING_CONNECTED'||r.callType==='OUTGOING_FAILED') byDay[d].out++;
+    else if (r.callType==='INCOMING')  byDay[d].inc++;
+    else if (r.callType==='MISSED')    byDay[d].miss++;
+  });
+  const days   = Object.keys(byDay).sort();
+  const labels = days.map(d => d.slice(5));
+  const outD   = days.map(d => byDay[d].out);
+  const incD   = days.map(d => byDay[d].inc);
+  const missD  = days.map(d => byDay[d].miss);
+
+  document.getElementById('trend-range').textContent = days.length ? `${days[0]} – ${days[days.length-1]}` : '';
+
+  if (trendChart) trendChart.destroy();
+  const ctx = document.getElementById('trend-chart').getContext('2d');
+  trendChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label:'โทรออก',  data:outD,  backgroundColor:'rgba(91,155,248,0.7)',  borderRadius:2 },
+        { label:'รับสาย',  data:incD,  backgroundColor:'rgba(62,207,160,0.7)', borderRadius:2 },
+        { label:'MISSED',  data:missD, backgroundColor:'rgba(245,96,90,0.5)',  borderRadius:2 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#7A7F96', font:{size:11} } } },
+      scales:{
+        x:{ ticks:{color:'#454A60',font:{size:10}}, grid:{color:'rgba(255,255,255,0.04)'} },
+        y:{ ticks:{color:'#454A60',font:{size:10}}, grid:{color:'rgba(255,255,255,0.04)'} },
+      }
+    }
+  });
+}
+
+// ─── TYPE DOUGHNUT ────────────────────────────
+function renderTypeChart() {
+  const outOk   = filtered.filter(r=>r.callType==='OUTGOING_CONNECTED').length;
+  const outFail = filtered.filter(r=>r.callType==='OUTGOING_FAILED').length;
+  const inc     = filtered.filter(r=>r.callType==='INCOMING').length;
+  const miss    = filtered.filter(r=>r.callType==='MISSED').length;
+
+  if (typeChart) typeChart.destroy();
+  const ctx = document.getElementById('type-chart').getContext('2d');
+  typeChart = new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels:['โทรออกติด','โทรออกไม่ติด','รับสาย','MISSED'],
+      datasets:[{
+        data:[outOk,outFail,inc,miss],
+        backgroundColor:['rgba(91,155,248,0.8)','rgba(245,166,35,0.8)','rgba(62,207,160,0.8)','rgba(245,96,90,0.8)'],
+        borderWidth:0, hoverOffset:4,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'65%',
+      plugins:{
+        legend:{ position:'right', labels:{ color:'#7A7F96', font:{size:11}, boxWidth:10, padding:12 } }
+      }
+    }
+  });
+}
+
+// ─── STAFF BARS ───────────────────────────────
+function renderStaffBars() {
+  const byStaff = groupByStaff(filtered);
+  const sorted  = Object.entries(byStaff).sort((a,b) => b[1].outOk - a[1].outOk);
+  const maxOut  = Math.max(...sorted.map(([,v])=>v.outOk), 1);
+  const el      = document.getElementById('staff-bars');
+
+  if (!sorted.length) { el.innerHTML = '<div class="empty">ไม่มีข้อมูล</div>'; return; }
+
+  el.innerHTML = '<div class="bar-chart">' +
+    sorted.map(([name, v]) => {
+      const w = Math.max(4, Math.round(v.outOk / maxOut * 100));
+      const dur = fmtDurShort(v.totalDur);
+      return `<div class="bar-row">
+        <div class="bar-name" title="${escHtml(name)}">${escHtml(name)}</div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${w}%;background:linear-gradient(90deg,rgba(91,155,248,0.6),rgba(91,155,248,0.9))">
+            <span class="bar-val">${v.outOk}</span>
+          </div>
+        </div>
+        <div class="bar-sub">${dur}</div>
+      </div>`;
+    }).join('') + '</div>';
+}
+
+// ─── STAFF TABLE ──────────────────────────────
+function renderStaffTable() {
+  const byStaff = groupByStaff(filtered);
+  const sorted  = Object.entries(byStaff).sort((a,b) => (b[1].outOk+b[1].outFail) - (a[1].outOk+a[1].outFail));
+  const tbody   = document.getElementById('staff-summary-body');
+
+  if (!sorted.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty">ไม่มีข้อมูล</td></tr>'; return; }
+
+  tbody.innerHTML = sorted.map(([name, v]) => {
+    const totalCalls = v.outOk + v.outFail + v.incoming + v.missed;
+    const connected  = v.outOk + v.incoming;
+    const avgDur     = connected > 0 ? Math.round(v.totalDur / connected) : 0;
+    return `<tr>
+      <td><strong>${escHtml(name)}</strong></td>
+      <td class="mono right" style="color:var(--blue)">${v.outOk}</td>
+      <td class="mono right" style="color:var(--amber)">${v.outFail}</td>
+      <td class="mono right" style="color:var(--green)">${v.incoming}</td>
+      <td class="mono right" style="color:var(--red)">${v.missed}</td>
+      <td class="mono right">${fmtDurShort(v.totalDur)}</td>
+      <td class="mono right">${fmtDurShort(avgDur)}</td>
+      <td>
+        <div class="mini-bar">
+          <div class="mini-seg" style="flex:${v.outOk};background:var(--blue)"></div>
+          <div class="mini-seg" style="flex:${v.outFail};background:var(--amber)"></div>
+          <div class="mini-seg" style="flex:${v.incoming};background:var(--green)"></div>
+          <div class="mini-seg" style="flex:${v.missed};background:var(--red)"></div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── DETAIL TABLE ─────────────────────────────
+function renderDetailTable(rows) {
+  const tbody = document.getElementById('detail-body');
+  const empty = document.getElementById('detail-empty');
+  if (!rows.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display = 'none';
+
+  const typeLabel = {
+    OUTGOING_CONNECTED: '<span class="type-badge type-out">โทรออกติด</span>',
+    OUTGOING_FAILED:    '<span class="type-badge type-fail">โทรออกไม่ติด</span>',
+    INCOMING:           '<span class="type-badge type-in">รับสาย</span>',
+    MISSED:             '<span class="type-badge type-miss">MISSED</span>',
+  };
+
+  tbody.innerHTML = rows.slice(0,500).map(r => `<tr>
+    <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">${fmtDateTime(r.date)}</td>
+    <td>${escHtml(r.staff)}</td>
+    <td style="font-family:var(--mono)">${escHtml(r.phone)}</td>
+    <td>${typeLabel[r.callType]||r.callType}</td>
+    <td class="mono" style="color:${r.duration>0?'var(--green)':'var(--text-faint)'}">${r.duration>0?fmtDurShort(r.duration):'—'}</td>
+    <td>${r.weblink ? `<a href="${escHtml(r.weblink)}" target="_blank" class="link-btn">▶ เล่น</a>` : '<span style="color:var(--text-faint);font-size:11px">—</span>'}</td>
+  </tr>`).join('');
+
+  if (rows.length > 500) {
+    tbody.innerHTML += `<tr><td colspan="6" style="text-align:center;color:var(--text-faint);font-size:12px;padding:12px">แสดง 500 รายการแรก จากทั้งหมด ${rows.length.toLocaleString()}</td></tr>`;
+  }
+}
+
+// ─── GROUP BY STAFF ───────────────────────────
+function groupByStaff(rows) {
+  const m = {};
+  rows.forEach(r => {
+    if (!m[r.staff]) m[r.staff] = { outOk:0, outFail:0, incoming:0, missed:0, totalDur:0 };
+    const s = m[r.staff];
+    if (r.callType==='OUTGOING_CONNECTED') { s.outOk++;   s.totalDur += r.duration; }
+    else if (r.callType==='OUTGOING_FAILED') s.outFail++;
+    else if (r.callType==='INCOMING')      { s.incoming++; s.totalDur += r.duration; }
+    else if (r.callType==='MISSED')          s.missed++;
+  });
+  return m;
+}
+
+// ─── CONFIG MODAL ─────────────────────────────
+function openConfig() {
+  const cfg = getCfg();
+  document.getElementById('input-log-id').value     = cfg.logId !== DEFAULT_CFG.logId ? cfg.logId : '';
+  document.getElementById('input-staff-id').value   = cfg.staffId !== DEFAULT_CFG.staffId ? cfg.staffId : '';
+  document.getElementById('input-log-sheet').value   = cfg.logSheet;
+  document.getElementById('input-staff-sheet').value = cfg.staffSheet;
+  document.getElementById('config-modal').style.display = 'flex';
+}
+
+function closeConfig() {
+  document.getElementById('config-modal').style.display = 'none';
+}
+
+function saveConfig() {
+  const logId     = document.getElementById('input-log-id').value.trim();
+  const staffId   = document.getElementById('input-staff-id').value.trim();
+  const logSheet   = document.getElementById('input-log-sheet').value.trim() || 'call_logs';
+  const staffSheet = document.getElementById('input-staff-sheet').value.trim() || 'staff';
+  if (!logId) { alert('กรุณาใส่ Call Log Sheet ID'); return; }
+  localStorage.setItem(LS.logId,      logId);
+  localStorage.setItem(LS.staffId,    staffId || logId);
+  localStorage.setItem(LS.logSheet,   logSheet);
+  localStorage.setItem(LS.staffSheet, staffSheet);
+  closeConfig();
+  loadData();
+}
+
+// ─── UTILS ───────────────────────────────────
+function setText(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(d) { return d instanceof Date ? d.toISOString().slice(0,10) : String(d).slice(0,10); }
+function fmtDateTime(d) {
+  if (!(d instanceof Date)||isNaN(d)) return '—';
+  return d.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'2-digit'}) + ' ' +
+    d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+}
+function fmtDurShort(sec) {
+  if (!sec) return '0s';
+  if (sec < 60)   return sec + 's';
+  if (sec < 3600) return Math.floor(sec/60) + 'm ' + (sec%60) + 's';
+  return Math.floor(sec/3600) + 'h ' + Math.floor((sec%3600)/60) + 'm';
+}
+function pct(n, total) { return total ? Math.round(n/total*100) + '%' + ' ของสายทั้งหมด' : ''; }
+function hideLoading() { document.getElementById('loading').style.display = 'none'; }
+function showError(msg) {
+  const el = document.getElementById('error-box');
+  if (!msg) { el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display = 'block';
+  el.innerHTML = `<div class="error-box">⚠ ${escHtml(msg)}</div>`;
+}
+
+// ─── INIT ─────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
