@@ -389,15 +389,17 @@
 
   <!-- Trend + Type breakdown -->
   <div class="grid-2">
-    <div class="card" style="display:none">
+    <div class="card">
       <div class="card-title">สายต่อวัน <span id="trend-range"></span></div>
-      <div style="position:relative;height:140px;width:100%">
-        <canvas id="trend-chart"></canvas>
+      <div style="position:relative;height:160px;width:100%;overflow:hidden">
+        <canvas id="trend-chart" style="position:absolute;top:0;left:0;width:100%!important;height:100%!important"></canvas>
       </div>
     </div>
-    <div class="card" style="display:none">
+    <div class="card">
       <div class="card-title">สัดส่วนประเภทสาย</div>
-      <canvas id="type-chart" style="width:100%;height:140px"></canvas>
+      <div style="position:relative;height:160px;width:100%;overflow:hidden">
+        <canvas id="type-chart" style="position:absolute;top:0;left:0;width:100%!important;height:100%!important"></canvas>
+      </div>
     </div>
   </div>
 
@@ -735,9 +737,9 @@ function renderTypeChart() {
   const inc     = filtered.filter(r=>r.callType==='INCOMING').length;
   const miss    = filtered.filter(r=>r.callType==='MISSED').length;
 
-  if (typeChart) typeChart.destroy();
-  const ctx = document.getElementById('type-chart').getContext('2d');
-  typeChart = new Chart(ctx, {
+  if (typeChart) { typeChart.destroy(); typeChart = null; }
+  const ctxType = document.getElementById('type-chart').getContext('2d');
+  typeChart = new Chart(ctxType, {
     type:'doughnut',
     data:{
       labels:['โทรออกติด','โทรออกไม่ติด','รับสาย','MISSED'],
@@ -748,7 +750,7 @@ function renderTypeChart() {
       }]
     },
     options:{
-      responsive:true, maintainAspectRatio:false, cutout:'65%',
+      responsive:true, maintainAspectRatio:false, animation:false, cutout:'65%',
       plugins:{
         legend:{ position:'right', labels:{ color:'#7A7F96', font:{size:11}, boxWidth:10, padding:12 } }
       }
