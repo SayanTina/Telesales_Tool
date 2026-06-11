@@ -657,6 +657,29 @@ function renderStats() {
   setText('stat-duration-sub',`เฉลี่ย ${fmtDurShort(avgDur)} / สาย`);
 }
 
+// ─── TREND CHART PLUGIN (defined once) ───────
+const totalLabelPlugin = {
+  id: 'totalLabel',
+  afterDatasetsDraw(chart) {
+    if (chart.canvas.id !== 'trend-chart') return;
+    const c       = chart.ctx;
+    const totals  = chart._totalLabels || [];
+    const lastIdx = chart.data.datasets.length - 1;
+    const lastMeta = chart.getDatasetMeta(lastIdx);
+    lastMeta.data.forEach((bar, i) => {
+      const total = totals[i];
+      if (!total) return;
+      c.save();
+      c.font = '600 10px IBM Plex Mono, monospace';
+      c.fillStyle = 'rgba(255,255,255,0.7)';
+      c.textAlign = 'center';
+      c.textBaseline = 'bottom';
+      c.fillText(total, bar.x, bar.y - 2);
+      c.restore();
+    });
+  }
+};
+
 // ─── TREND CHART ─────────────────────────────
 function renderTrend() {
   const byDay = {};
@@ -684,27 +707,6 @@ function renderTrend() {
 
   if (trendChart) trendChart.destroy();
   const ctx = document.getElementById('trend-chart').getContext('2d');
-
-  // plugin สำหรับแสดงตัวเลขรวมบนแท่ง
-  const totalLabelPlugin = {
-    id: 'totalLabel',
-    afterDatasetsDraw(chart) {
-      const { ctx: c, data } = chart;
-      const meta0 = chart.getDatasetMeta(0); // ใช้ dataset แรกหา x position
-      const lastMeta = chart.getDatasetMeta(chart.data.datasets.length - 1);
-      lastMeta.data.forEach((bar, i) => {
-        const total = totals[i];
-        if (!total) return;
-        c.save();
-        c.font = '600 10px IBM Plex Mono, monospace';
-        c.fillStyle = 'rgba(255,255,255,0.7)';
-        c.textAlign = 'center';
-        c.textBaseline = 'bottom';
-        c.fillText(total, bar.x, bar.y - 2);
-        c.restore();
-      });
-    }
-  };
 
   trendChart = new Chart(ctx, {
     type: 'bar',
@@ -739,6 +741,7 @@ function renderTrend() {
       }
     }
   });
+  trendChart._totalLabels = totals;
 }
 
 // ─── TYPE DOUGHNUT ────────────────────────────
