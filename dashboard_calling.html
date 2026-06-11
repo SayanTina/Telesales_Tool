@@ -306,9 +306,9 @@
   <div class="topbar-left">
     <span class="brand"><span class="brand-dot"></span>Call Dashboard</span>
     <span style="font-size:11px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);color:var(--text-faint);padding:2px 8px;border-radius:20px">v1.0.0</span>
-    <span id="last-sync" style="font-size:11px;color:var(--text-faint)"></span>
   </div>
-  <div style="display:flex;gap:8px">
+  <div style="display:flex;gap:8px;align-items:center">
+    <span id="last-sync" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="sync-btn" onclick="loadData()" id="sync-btn">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
       Sync
@@ -389,7 +389,7 @@
 
   <!-- Trend + Type breakdown -->
   <div class="grid-2">
-    <div class="card">
+    <div class="card" style="display:none">
       <div class="card-title">สายต่อวัน <span id="trend-range"></span></div>
       <div style="position:relative;height:140px;width:100%">
         <canvas id="trend-chart"></canvas>
