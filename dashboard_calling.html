@@ -662,16 +662,14 @@ function renderTrend() {
   const byDay = {};
   filtered.forEach(r => {
     const d = fmtDate(r.date);
-    if (!byDay[d]) byDay[d] = { out:0, inc:0, miss:0 };
-    if (r.callType==='OUTGOING_CONNECTED'||r.callType==='OUTGOING_FAILED') byDay[d].out++;
-    else if (r.callType==='INCOMING')  byDay[d].inc++;
-    else if (r.callType==='MISSED')    byDay[d].miss++;
+    if (!byDay[d]) byDay[d] = { outOk:0, outFail:0, inc:0, miss:0 };
+    if (r.callType==='OUTGOING_CONNECTED')  byDay[d].outOk++;
+    else if (r.callType==='OUTGOING_FAILED') byDay[d].outFail++;
+    else if (r.callType==='INCOMING')        byDay[d].inc++;
+    else if (r.callType==='MISSED')          byDay[d].miss++;
   });
   const days   = Object.keys(byDay).sort();
   const labels = days.map(d => d.slice(5));
-  const outD   = days.map(d => byDay[d].out);
-  const incD   = days.map(d => byDay[d].inc);
-  const missD  = days.map(d => byDay[d].miss);
 
   document.getElementById('trend-range').textContent = days.length ? `${days[0]} – ${days[days.length-1]}` : '';
 
@@ -682,17 +680,28 @@ function renderTrend() {
     data: {
       labels,
       datasets: [
-        { label:'โทรออก',  data:outD,  backgroundColor:'rgba(91,155,248,0.7)',  borderRadius:2 },
-        { label:'รับสาย',  data:incD,  backgroundColor:'rgba(62,207,160,0.7)', borderRadius:2 },
-        { label:'MISSED',  data:missD, backgroundColor:'rgba(245,96,90,0.5)',  borderRadius:2 },
+        { label:'โทรออกติด',     data: days.map(d=>byDay[d].outOk),   backgroundColor:'rgba(91,155,248,0.85)',  borderRadius:0, stack:'s' },
+        { label:'โทรออกไม่ติด',  data: days.map(d=>byDay[d].outFail), backgroundColor:'rgba(245,166,35,0.7)',  borderRadius:0, stack:'s' },
+        { label:'รับสาย',        data: days.map(d=>byDay[d].inc),     backgroundColor:'rgba(62,207,160,0.8)',  borderRadius:0, stack:'s' },
+        { label:'MISSED',        data: days.map(d=>byDay[d].miss),    backgroundColor:'rgba(245,96,90,0.65)',  borderRadius:0, stack:'s' },
       ]
     },
     options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ labels:{ color:'#7A7F96', font:{size:11} } } },
-      scales:{
-        x:{ ticks:{color:'#454A60',font:{size:10}}, grid:{color:'rgba(255,255,255,0.04)'} },
-        y:{ ticks:{color:'#454A60',font:{size:10}}, grid:{color:'rgba(255,255,255,0.04)'} },
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels:{ color:'#7A7F96', font:{size:11}, boxWidth:10, padding:10 } },
+        tooltip: {
+          callbacks: {
+            footer: items => {
+              const total = items.reduce((s,i) => s + i.parsed.y, 0);
+              return 'รวม: ' + total + ' สาย';
+            }
+          }
+        }
+      },
+      scales: {
+        x: { stacked:true, ticks:{color:'#454A60',font:{size:10}}, grid:{color:'rgba(255,255,255,0.04)'} },
+        y: { stacked:true, ticks:{color:'#454A60',font:{size:10}}, grid:{color:'rgba(255,255,255,0.04)'} },
       }
     }
   });
