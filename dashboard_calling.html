@@ -305,7 +305,7 @@
 <nav class="topbar">
   <div class="topbar-left">
     <span class="brand"><span class="brand-dot"></span>Call Dashboard</span>
-    <span style="font-size:11px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);color:var(--text-faint);padding:2px 8px;border-radius:20px">v1.0.0</span>
+    <span style="font-size:11px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);color:var(--text-faint);padding:2px 8px;border-radius:20px">v1.0.1</span>
   </div>
   <div style="display:flex;gap:8px;align-items:center">
     <span id="last-sync" style="font-size:11px;color:var(--text-faint)"></span>
@@ -474,12 +474,16 @@ const DEFAULT_CFG = {
   staffSheet: 'staff',
 };
 
+function getQueryParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
+
 function getCfg() {
   return {
-    logId:      localStorage.getItem(LS.logId)      || DEFAULT_CFG.logId,
-    staffId:    localStorage.getItem(LS.staffId)    || DEFAULT_CFG.staffId,
-    logSheet:   localStorage.getItem(LS.logSheet)   || DEFAULT_CFG.logSheet,
-    staffSheet: localStorage.getItem(LS.staffSheet) || DEFAULT_CFG.staffSheet,
+    logId:      getQueryParam('logId')      || localStorage.getItem(LS.logId)      || DEFAULT_CFG.logId,
+    staffId:    getQueryParam('staffId')    || localStorage.getItem(LS.staffId)    || DEFAULT_CFG.staffId,
+    logSheet:   getQueryParam('logSheet')   || localStorage.getItem(LS.logSheet)   || DEFAULT_CFG.logSheet,
+    staffSheet: getQueryParam('staffSheet') || localStorage.getItem(LS.staffSheet) || DEFAULT_CFG.staffSheet,
   };
 }
 
